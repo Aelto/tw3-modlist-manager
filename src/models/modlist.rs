@@ -277,11 +277,15 @@ impl ModList {
     let scriptmerger_path = std::env::current_dir().unwrap()
       .join(constants::SCRIPTMERGER_PATH);
 
-    if scriptmerger_path.exists() {
+    let modlist_mergeinventory_path = self.mergeinventory_path();
+
+    // we do this operation only if the scriptmerger is installed at the right place
+    // AND the modlist we're installing has a mergeinventory file
+    if scriptmerger_path.exists() && modlist_mergeinventory_path.exists() {
       let scriptmerger_mergeinventory_path = scriptmerger_path.join("MergeInventory.xml");
 
       remove_symlink(&scriptmerger_mergeinventory_path);
-      make_symlink(&scriptmerger_mergeinventory_path, &self.mergeinventory_path())?;
+      make_symlink(&scriptmerger_mergeinventory_path, &modlist_mergeinventory_path)?;
     }
     
     Ok(())
