@@ -34,7 +34,11 @@ pub fn remove_symlinks(directory: &PathBuf) -> std::io::Result<()> {
 
   for child_err in children {
     if let Ok(child) = child_err {
-      remove_symlink(&child.path())?;
+      // let if fail on purpose because it loops on all children, including
+      // non-symlinks. And the safer way to checks if a child is a symlink
+      // is to try to parse the symlink. And this operation fails if it's not
+      // a symlink.
+      remove_symlink(&child.path());
     }
   }
 
@@ -51,11 +55,8 @@ pub fn make_symlink(from: &PathBuf, to: &PathBuf) -> std::io::Result<()> {
 }
 
 pub fn remove_symlink(path: &PathBuf) -> std::io::Result<()> {
-  // symlink::remove_symlink_auto(path)?;
   let symlink_path = fs::read_link(&path)?;
 
-  // println!("removing symlink at {:?}", path);
-  
   if symlink_path.exists() {
     println!("removing symlink");
 
