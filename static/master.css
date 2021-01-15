@@ -90,3 +90,7 @@ li input {
 .small {
   font-size: 0.6em;
 }
+
+.flex-end {
+  justify-content: flex-end;
+}

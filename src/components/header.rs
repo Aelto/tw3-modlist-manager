@@ -118,5 +118,9 @@ fn master_css_content() -> String {
   .small {
     font-size: 0.6em;
   }
+
+  .flex-end {
+    justify-content: flex-end;
+  }
   ".to_owned()
 }

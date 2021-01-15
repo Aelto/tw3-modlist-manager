@@ -40,6 +40,12 @@ pub async fn render(req: HttpRequest) -> HttpResponse {
             }
           }
         }
+
+        div class="row flex-end" {
+          form method="post" action="/api/program/exit" {
+            input type="submit" class="text-style" value="exit" onclick="setTimeout(() => window.close(), 1000);";
+          }
+        }
       }
     }
   };
