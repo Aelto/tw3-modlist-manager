@@ -1,0 +1,25 @@
+[package]
+name = "tw3-modlist-manager"
+version = "0.1.0"
+authors = ["Aelto <Aelto@users.noreply.github.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+actix-web = "2.0.0"
+actix-files = "0.2.1"
+actix-utils = "1.0.3"
+actix-rt = "1.0.0"
+actix-multipart = "0.2.0"
+
+maud = { version = "0.21.0", features = ["actix-web"] }
+rusqlite = { version = "0.21.0", features = ["bundled"] }
+serde = "1.0.104"
+futures = "0.3.1"
+chrono = { version = "0.4", features = ["serde"] }
+
+toml = "0.5.8"
+dirs = "3.0.1"
+pathdiff = "0.2.0"
+symlink = "0.1.0"
