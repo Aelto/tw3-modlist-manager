@@ -222,7 +222,10 @@ pub async fn initialize(req: HttpRequest) -> Result<HttpResponse> {
     
   let current_mods_path = witcher_root.join("mods");
   let current_dlc_path = witcher_root.join("dlc");
-  let current_content_path = witcher_root.join("content");
+  let current_content_path = witcher_root
+    .join("content")
+    .join("content0")
+    .join("scripts");
   let current_saves_path = dirs::document_dir().ok_or(
     HttpResponse::InternalServerError()
     .content_type("text/plain")
