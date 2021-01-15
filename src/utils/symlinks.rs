@@ -1,7 +1,5 @@
 use std::fs;
 use std::path::PathBuf;
-use std::process::Command;
-use std::os::windows::fs::{symlink_dir, symlink_file};
 
 /// loops through all children in the `source` directory and creates a smylink for
 /// every child in the `destination` directory.

@@ -210,6 +210,11 @@ impl ModList {
       .join(constants::MODLIST_CONFIG_NAME)
   }
 
+  pub fn mergeinventory_path(&self) -> PathBuf {
+    self.path()
+      .join(constants::MODLIST_MERGEINVENTORY_PATH)
+  }
+
   pub fn is_valid(&self) -> bool {
     let dlcs_path = self.dlcs_path();
     let mods_path = self.mods_path();
@@ -242,28 +247,6 @@ impl ModList {
     let current_saves_path = dirs::document_dir()
         .ok_or(std::io::ErrorKind::NotFound)?
         .join("The Witcher 3");
-
-    // transform to a relative path because it fails silently if it's an absolute
-    // path. I don't know why...
-    // let current_saves_path = pathdiff::diff_paths(
-    //   dirs::document_dir()
-    //     .ok_or(std::io::ErrorKind::NotFound)?
-    //     .join("The Witcher 3"),
-    //   std::env::current_dir().unwrap()
-    // ).unwrap();
-
-    println!("
-    current_mods_path = {:?}
-    current_dlc_path = {:?}
-    current_content_path = {:?}
-    current_saves_path = {:?}
-    current_menu_path = {:?}
-    ",
-    current_mods_path,
-    current_dlc_path,
-    current_content_path,
-    current_saves_path,
-    current_menu_path);
     
     // first, we remove all existing symlinks if they exist
     // let them fail if the paths do not exist
@@ -279,6 +262,27 @@ impl ModList {
     make_symlink(&current_menu_path, &self.menus_path())?;
     make_symlink(&current_saves_path, &self.saves_path())?;
     make_symlink(&current_content_path, &self.content_path())?;
+
+    // scriptermerger mergeinventory case:
+    // special case to handle the scriptmerger mergeinventory.xml file.
+    // because the tool uses a global database for the current state of the merge.
+    // So whenever we swap modlists, we have to also swap the mergeinventory,
+    // and for that we say that if the scripter merger is installed in the
+    // `The Witcher 3/scriptmerger` directory and there is no merge inventory
+    // we place a symlink to the new merge inventory. And if there is already a
+    // symlink, we replace it.
+    // And if there is a mergeinventory.xml file and not a symlink, we don't do anything
+    // and let it fail. Because we don't want to override the current mergeinventory
+    // of the user without asking him.
+    let scriptmerger_path = std::env::current_dir().unwrap()
+      .join(constants::SCRIPTMERGER_PATH);
+
+    if scriptmerger_path.exists() {
+      let scriptmerger_mergeinventory_path = scriptmerger_path.join("MergeInventory.xml");
+
+      remove_symlink(&scriptmerger_mergeinventory_path);
+      make_symlink(&scriptmerger_mergeinventory_path, &self.mergeinventory_path())?;
+    }
     
     Ok(())
   }
