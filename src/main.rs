@@ -8,7 +8,6 @@ extern crate chrono;
 
 use actix_web::{App, web, HttpServer};
 use actix_files as fs;
-use api::program;
 
 mod pages;
 mod components;
