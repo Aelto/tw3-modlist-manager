@@ -1,1 +1,0 @@
-mklink /J d:\dev\github\tw3-modlist-manager\.\ghost-mode\dlcs\test d:\dev\github\tw3-modlist-manager\.\lazarus\dlcs\test
