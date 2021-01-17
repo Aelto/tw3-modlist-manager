@@ -50,7 +50,7 @@ pub async fn render(req: HttpRequest) -> HttpResponse {
     }
   };
 
-  let view = components::page("root", &content);
+  let view = components::page("modlists", &content);
   
   HttpResponse::Ok()
   .content_type("text/html")
