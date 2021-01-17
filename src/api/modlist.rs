@@ -6,6 +6,7 @@ use actix_web::{web, HttpRequest, HttpResponse, Result, http};
 use crate::constants;
 use dirs;
 
+use crate::utils::api_error::api_error;
 use crate::models::modlist::ModList;
 
 #[derive(Serialize, Deserialize)]
@@ -260,32 +261,53 @@ pub async fn initialize(req: HttpRequest) -> Result<HttpResponse> {
   let vanilla_content_path = vanilla_modlist.join("content");
   let vanilla_saves_path = vanilla_modlist.join("saves");
 
-  println!("
-  vanilla_modlist = {:?}
-  vanilla_mods_path = {:?}
-  vanilla_dlc_path = {:?}
-  vanilla_menu_path = {:?}
-  vanilla_content_path = {:?}
-  vanilla_saves_path = {:?}
-  ",
-  vanilla_modlist,
-  vanilla_mods_path,
-  vanilla_dlc_path,
-  vanilla_menu_path,
-  vanilla_content_path,
-  vanilla_saves_path);
+  let result = fs::create_dir_all(vanilla_modlist)
+  .map_err(|err| api_error(format!("could not create the vanilla modlist directory: {}", err)))
+  .and_then(|_| {
+    fs::rename(&current_mods_path, &vanilla_mods_path)
+    .or_else(|_| {
+      // vanilla has no mods folder, so if it fails, just create an empty mods folder
+      // in the modlist
+      fs::create_dir(&vanilla_mods_path)?;
 
-  fs::create_dir_all(vanilla_modlist)
-  .and(fs::rename(current_mods_path, vanilla_mods_path))
-  .and(fs::rename(current_dlc_path, vanilla_dlc_path))
-  .and(fs::rename(current_menu_path, vanilla_menu_path))
-  .and(fs::rename(current_content_path, vanilla_content_path))
-  .and(fs::rename(current_saves_path, vanilla_saves_path))
-  .map_err(|err| {
-    HttpResponse::InternalServerError()
-        .content_type("text/plain")
-        .body(format!("Internal server error: an error occured when initializing the vanilla modlist {}", err))
-  })?;
+      Ok(())
+    })
+    .map_err(|err: std::io::Error| api_error(format!("could not transfer the mods into the vanilla modlist: {}", err)))
+  })
+  .and_then(|_| {
+    fs::rename(&current_dlc_path, &vanilla_dlc_path)
+    .map_err(|err| api_error(format!("could not transfer the dlcs into the vanilla modlist: {}", err)))
+  })
+  .and_then(|_| {
+    fs::rename(&current_menu_path, &vanilla_menu_path)
+    .map_err(|err| api_error(format!("could not transfer the menus into the vanilla modlist: {}", err)))
+  })
+  .and_then(|_| {
+    fs::rename(&current_content_path, &vanilla_content_path)
+    .map_err(|err| api_error(format!("could not transfer the content scripts into the vanilla modlist: {}", err)))
+  })
+  .and_then(|_| {
+    fs::rename(&current_saves_path, &vanilla_saves_path)
+    .or_else(|_| {
+      fs::copy(&current_saves_path, &vanilla_saves_path)?;
+
+      fs::remove_dir_all(&current_saves_path)?;
+
+      Ok(())
+    })
+    .map_err(|err: std::io::Error| api_error(format!("could not transfer the save into the vanilla modlist: {}", err)))
+  });
+
+  // if it failed, revert everything to its original location
+  if result.is_err() {
+    fs::rename(&vanilla_mods_path, &current_mods_path);
+    fs::rename(&vanilla_dlc_path, &current_dlc_path);
+    fs::rename(&vanilla_menu_path, &current_menu_path);
+    fs::rename(&vanilla_content_path, &current_content_path);
+    fs::rename(&vanilla_saves_path, &current_saves_path);
+  }
+
+  result?;
 
   Ok(
     HttpResponse::Found()
@@ -293,6 +315,7 @@ pub async fn initialize(req: HttpRequest) -> Result<HttpResponse> {
       .content_type("text/plain")
       .body("initialized")
   )
+
 }
 
 #[derive(Serialize, Deserialize)]
