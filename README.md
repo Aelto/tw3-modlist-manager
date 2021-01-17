@@ -14,12 +14,12 @@ On first launch the option to `initialize` is available. This option moves the n
 > you will see later, but the vanilla modlist is important as it's a requirement for all other modlists. It contains the base game DLCs and scripts
 
 ## Creating a modlist
-Once the you've initialized the modlist manager, you can now create a new modlist with the text input and the `new` button. A modlist is just a directory with 5 folders, if any of these five folders is missing the manager won't consider the modlist as valid and won't display it in the interface.
+Once the you've initialized the modlist manager, you can now create a new modlist with the text input and the `new` button. A modlist is just a directory with 6 folders, if any of these six folders is missing the manager won't consider the modlist as valid and won't display it in the interface.
 
-If you want to add mods to a modlist, do exactly as you would do with the game before. Drop the mods in the `mods` directory of the modlist, DLCs in the `dlcs` directory, changes in the content in the `content` directory, new menus in the `menus` directory and changes in the keybinds and/or saves in the `saves` directory.
+If you want to add mods to a modlist, do exactly as you would do with the game before. Drop the mods in the `mods` directory of the modlist, DLCs in the `dlcs` directory, changes in the content in the `content` directory, changes in the vanilla bundles go in the `bundles` directory,  new menus in the `menus` directory and changes in the keybinds and/or saves in the `saves` directory.
 You can refer to the vanilla modlist to understand how to place the files and folders.
 
-## Importing modlists
+## Importing a modlist
 You've created yourself a new modlist, but that's not enough. Imagine you added a new mod in your modlist and wanted to install it. The game won't launch because it's missing all the necessary vanilla files such as the content directory, and the sixteen or so base DLCs.
 
 For this reason modlist imports were created. Your modlist can import the vanilla modlist to inherit all of its content, the vanilla files. **this is why you must ALWAYS import the vanilla modlist**.
