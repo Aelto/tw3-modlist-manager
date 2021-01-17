@@ -229,6 +229,7 @@ impl ModList {
     let menus_path = self.menus_path();
     let saves_path = self.saves_path();
     let content_path = self.content_path();
+    let bundles_path = self.bundles_path();
 
     self.path().exists()
     && dlcs_path.exists()
@@ -236,6 +237,7 @@ impl ModList {
     && menus_path.exists()
     && saves_path.exists()
     && content_path.exists()
+    && bundles_path.exists()
   }
 
   pub fn install(&self) -> std::io::Result<()> {
@@ -354,6 +356,7 @@ impl ModList {
     fs::create_dir_all(modlist.menus_path())?;
     fs::create_dir_all(modlist.saves_path())?;
     fs::create_dir_all(modlist.content_path())?;
+    fs::create_dir_all(modlist.bundles_path())?;
 
     Ok(modlist)
   }
