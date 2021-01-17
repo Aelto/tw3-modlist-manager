@@ -227,6 +227,10 @@ pub async fn initialize(req: HttpRequest) -> Result<HttpResponse> {
     .join("content")
     .join("content0")
     .join("scripts");
+  let current_bundles_path = witcher_root
+    .join("content")
+    .join("content0")
+    .join("bundles");
   let current_saves_path = dirs::document_dir().ok_or(
     HttpResponse::InternalServerError()
     .content_type("text/plain")
@@ -239,19 +243,6 @@ pub async fn initialize(req: HttpRequest) -> Result<HttpResponse> {
     .join("user_config_matrix")
     .join("pc");
 
-  println!("
-  current_mods_path = {:?}
-  current_dlc_path = {:?}
-  current_content_path = {:?}
-  current_saves_path = {:?}
-  current_menu_path = {:?}
-  ",
-  current_mods_path,
-  current_dlc_path,
-  current_content_path,
-  current_saves_path,
-  current_menu_path);
-
   let modlist_database = Path::new(constants::MODLIST_DATABASE_PATH);
   
   let vanilla_modlist = modlist_database.join("vanilla");
@@ -259,6 +250,7 @@ pub async fn initialize(req: HttpRequest) -> Result<HttpResponse> {
   let vanilla_dlc_path = vanilla_modlist.join("dlcs");
   let vanilla_menu_path = vanilla_modlist.join("menus");
   let vanilla_content_path = vanilla_modlist.join("content");
+  let vanilla_bundles_path = vanilla_modlist.join("bundles");
   let vanilla_saves_path = vanilla_modlist.join("saves");
 
   let result = fs::create_dir_all(vanilla_modlist)
@@ -287,6 +279,10 @@ pub async fn initialize(req: HttpRequest) -> Result<HttpResponse> {
     .map_err(|err| api_error(format!("could not transfer the content scripts into the vanilla modlist: {}", err)))
   })
   .and_then(|_| {
+    fs::rename(&current_bundles_path, &vanilla_bundles_path)
+    .map_err(|err| api_error(format!("could not transfer the content bundles into the vanilla modlist: {}", err)))
+  })
+  .and_then(|_| {
     fs::rename(&current_saves_path, &vanilla_saves_path)
     .or_else(|_| {
       fs::copy(&current_saves_path, &vanilla_saves_path)?;
@@ -304,6 +300,7 @@ pub async fn initialize(req: HttpRequest) -> Result<HttpResponse> {
     fs::rename(&vanilla_dlc_path, &current_dlc_path);
     fs::rename(&vanilla_menu_path, &current_menu_path);
     fs::rename(&vanilla_content_path, &current_content_path);
+    fs::rename(&vanilla_bundles_path, &current_bundles_path);
     fs::rename(&vanilla_saves_path, &current_saves_path);
   }
 

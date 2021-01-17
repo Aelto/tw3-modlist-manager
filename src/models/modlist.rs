@@ -137,6 +137,7 @@ impl ModList {
     remove_symlinks(&self.menus_path())?;
     remove_symlinks(&self.saves_path())?;
     remove_symlinks(&self.content_path())?;
+    remove_symlinks(&self.bundles_path())?;
 
     Ok(())
   }
@@ -169,6 +170,8 @@ impl ModList {
       symlink_children(modlist.menus_path(), self.menus_path())?;
 
       symlink_children(modlist.content_path(), self.content_path())?;
+      
+      symlink_children(modlist.bundles_path(), self.bundles_path())?;
     }
 
     Ok(())
@@ -203,6 +206,11 @@ impl ModList {
   pub fn content_path(&self) -> PathBuf {
     self.path()
       .join("content")
+  }
+
+  pub fn bundles_path(&self) -> PathBuf {
+    self.path()
+      .join("bundles")
   }
 
   pub fn config_path(&self) -> PathBuf {
@@ -240,6 +248,10 @@ impl ModList {
       .join("content")
       .join("content0")
       .join("scripts");
+      let current_bundles_path = witcher_root
+      .join("content")
+      .join("content0")
+      .join("bundles");
     let current_menu_path = witcher_root
       .join("bin")
       .join("config")
@@ -258,6 +270,7 @@ impl ModList {
     remove_symlink(&current_menu_path);
     remove_symlink(&current_saves_path);
     remove_symlink(&current_content_path);
+    remove_symlink(&current_bundles_path);
 
     // then we create the symlinks to the current modlist directories
     make_symlink(&current_mods_path, &self.mods_path())?;
@@ -265,6 +278,7 @@ impl ModList {
     make_symlink(&current_menu_path, &self.menus_path())?;
     make_symlink(&current_saves_path, &self.saves_path())?;
     make_symlink(&current_content_path, &self.content_path())?;
+    make_symlink(&current_bundles_path, &self.bundles_path())?;
 
     // scriptermerger mergeinventory case:
     // special case to handle the scriptmerger mergeinventory.xml file.
