@@ -35,6 +35,9 @@ Ok so now you have a new modlist and its imports are all set up. You can install
 
 You can now launch the game and confirm the modlist you just installed is valid.
 
+### content0 mods
+mods who change content0 are a tiny bit different from the other folders like mods or dlcs as the archive you get from them often include only the files they changed and not the whole content scripts. And because the modlist manager doesn't go deeper than one directory (it's intended) so if you just drop the changed content0 scripts your game won't launch because it will say missing X ou Y. So if you install modlist it's advised to first pick the content from the vanilla modlist and only then drop the changed content0 scripts.
+
 ## Merging a modlist
 You're maybe wondering how it will work with your merged files. The modlist manager supports mergeinventory swapping too. The mergeinventory is what scriptmerger uses to store which mod you merged and which one you installed.
 
