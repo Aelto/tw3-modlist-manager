@@ -18,18 +18,3 @@ pub fn page(page_title: &str, page_content: &Markup) -> Markup {
     }
   }
 }
-
-pub fn page_without_menu(page_title: &str, page_content: &Markup) -> Markup {
-  html! {
-    (DOCTYPE)
-    html lang="en" {
-      (header(page_title))
-
-      body {
-        div id="content" {
-          (page_content)
-        }
-      }
-    }
-  }
-}

@@ -5,7 +5,7 @@ use maud::html;
 use actix_web::web::HttpRequest;
 use actix_web::{HttpResponse};
 
-pub async fn render(req: HttpRequest) -> HttpResponse {
+pub async fn render(_req: HttpRequest) -> HttpResponse {
   let modlists = ModList::get_all();
 
   // if there is no vanilla modlist, force a call to initialize

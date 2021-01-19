@@ -14,7 +14,7 @@ pub struct InstallModListBody {
   pub name: String,
 }
 
-pub async fn install_modlist(req: HttpRequest, form: web::Form<InstallModListBody>) -> Result<HttpResponse> {
+pub async fn install_modlist(_req: HttpRequest, form: web::Form<InstallModListBody>) -> Result<HttpResponse> {
   let modlist = ModList::get_by_name(&form.name);
 
   if modlist.is_none() {
@@ -47,7 +47,7 @@ pub struct CreateModListBody {
   pub modlist_name: String,
 }
 
-pub async fn create_modlist(req: HttpRequest, form: web::Form<CreateModListBody>) -> Result<HttpResponse> {
+pub async fn create_modlist(_req: HttpRequest, form: web::Form<CreateModListBody>) -> Result<HttpResponse> {
   let _modlist = ModList::create(&form.modlist_name)
   .map_err(|err| {
     HttpResponse::InternalServerError()
@@ -69,7 +69,7 @@ pub struct ImportModListBody {
   pub imported_name: String,
 }
 
-pub async fn import_modlist(req: HttpRequest, form: web::Form<ImportModListBody>) -> Result<HttpResponse> {
+pub async fn import_modlist(_req: HttpRequest, form: web::Form<ImportModListBody>) -> Result<HttpResponse> {
   let modlist = ModList::get_by_name(&form.modlist_name);
 
   if modlist.is_none() {
@@ -113,7 +113,7 @@ pub struct RemoveImportModListBody {
   pub imported_name: String,
 }
 
-pub async fn remove_imported_modlist(req: HttpRequest, form: web::Form<RemoveImportModListBody>) -> Result<HttpResponse> {
+pub async fn remove_imported_modlist(_req: HttpRequest, form: web::Form<RemoveImportModListBody>) -> Result<HttpResponse> {
   let modlist = ModList::get_by_name(&form.modlist_name);
 
   if modlist.is_none() {
@@ -156,7 +156,7 @@ pub struct ModListLoadImportsBody {
   pub modlist_name: String,
 }
 
-pub async fn load_imports_modlist(req: HttpRequest, form: web::Form<ModListLoadImportsBody>) -> Result<HttpResponse> {
+pub async fn load_imports_modlist(_req: HttpRequest, form: web::Form<ModListLoadImportsBody>) -> Result<HttpResponse> {
   let modlist = ModList::get_by_name(&form.modlist_name);
   println!("loading imports");
 
@@ -190,7 +190,7 @@ pub struct ModListUnloadImportsBody {
   pub modlist_name: String,
 }
 
-pub async fn unload_imports_modlist(req: HttpRequest, form: web::Form<ModListUnloadImportsBody>) -> Result<HttpResponse> {
+pub async fn unload_imports_modlist(_req: HttpRequest, form: web::Form<ModListUnloadImportsBody>) -> Result<HttpResponse> {
   let modlist = ModList::get_by_name(&form.modlist_name);
 
   if modlist.is_none() {
@@ -218,7 +218,7 @@ pub async fn unload_imports_modlist(req: HttpRequest, form: web::Form<ModListUnl
   )
 }
 
-pub async fn initialize(req: HttpRequest) -> Result<HttpResponse> {
+pub async fn initialize(_req: HttpRequest) -> Result<HttpResponse> {
   let witcher_root = Path::new(constants::WITCHER_GAME_ROOT);
     
   let current_mods_path = witcher_root.join("mods");
@@ -296,12 +296,29 @@ pub async fn initialize(req: HttpRequest) -> Result<HttpResponse> {
 
   // if it failed, revert everything to its original location
   if result.is_err() {
-    fs::rename(&vanilla_mods_path, &current_mods_path);
-    fs::rename(&vanilla_dlc_path, &current_dlc_path);
-    fs::rename(&vanilla_menu_path, &current_menu_path);
-    fs::rename(&vanilla_content_path, &current_content_path);
-    fs::rename(&vanilla_bundles_path, &current_bundles_path);
-    fs::rename(&vanilla_saves_path, &current_saves_path);
+    if let Err(error) = fs::rename(&vanilla_mods_path, &current_mods_path) {
+      println!("could not rename {:?} to {:?}, error: {}", &vanilla_mods_path, &current_mods_path, error);
+    };
+
+    if let Err(error) = fs::rename(&vanilla_dlc_path, &current_dlc_path) {
+      println!("could not rename {:?} to {:?}, error: {}", &vanilla_mods_path, &current_mods_path, error);
+    };
+
+    if let Err(error) = fs::rename(&vanilla_menu_path, &current_menu_path) {
+      println!("could not rename {:?} to {:?}, error: {}", &vanilla_mods_path, &current_mods_path, error);
+    };
+
+    if let Err(error) = fs::rename(&vanilla_content_path, &current_content_path) {
+      println!("could not rename {:?} to {:?}, error: {}", &vanilla_mods_path, &current_mods_path, error);
+    };
+
+    if let Err(error) = fs::rename(&vanilla_bundles_path, &current_bundles_path) {
+      println!("could not rename {:?} to {:?}, error: {}", &vanilla_mods_path, &current_mods_path, error);
+    };
+
+    if let Err(error) = fs::rename(&vanilla_saves_path, &current_saves_path) {
+      println!("could not rename {:?} to {:?}, error: {}", &vanilla_mods_path, &current_mods_path, error);
+    };
   }
 
   result?;
@@ -321,7 +338,7 @@ pub struct MoveModListDownBody {
   pub imported_modlist_name: String,
 }
 
-pub async fn move_imported_modlist_down(req: HttpRequest, form: web::Form<MoveModListDownBody>) -> Result<HttpResponse> {
+pub async fn move_imported_modlist_down(_req: HttpRequest, form: web::Form<MoveModListDownBody>) -> Result<HttpResponse> {
   let modlist = ModList::get_by_name(&form.modlist_name);
 
   if modlist.is_none() {
@@ -364,7 +381,7 @@ pub struct MoveModListUpBody {
   pub imported_modlist_name: String,
 }
 
-pub async fn move_imported_modlist_up(req: HttpRequest, form: web::Form<MoveModListUpBody>) -> Result<HttpResponse> {
+pub async fn move_imported_modlist_up(_req: HttpRequest, form: web::Form<MoveModListUpBody>) -> Result<HttpResponse> {
   let modlist = ModList::get_by_name(&form.modlist_name);
 
   if modlist.is_none() {
@@ -406,7 +423,7 @@ pub struct ViewModListBody {
   pub modlist_name: String
 }
 
-pub async fn view_modlist(req: HttpRequest, form: web::Form<ViewModListBody>) -> Result<HttpResponse> {
+pub async fn view_modlist(_req: HttpRequest, form: web::Form<ViewModListBody>) -> Result<HttpResponse> {
   let modlist = ModList::get_by_name(&form.modlist_name);
 
   if modlist.is_none() {

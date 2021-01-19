@@ -1,4 +1,4 @@
-use actix_web::{web, HttpRequest, HttpResponse, Result, http};
+use actix_web::HttpResponse;
 
 pub fn api_error(message: String) -> HttpResponse {
   HttpResponse::InternalServerError()

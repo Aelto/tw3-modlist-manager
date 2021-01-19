@@ -19,7 +19,9 @@ pub fn symlink_children(source: PathBuf, destination: PathBuf) -> std::io::Resul
       let absolute_from = current_dir.join(&imported_child_path);
       let absolute_to = current_dir.join(&child_path);
 
-      make_symlink(&absolute_from, &absolute_to);
+      if let Err(error) = make_symlink(&absolute_from, &absolute_to) {
+        println!("could not make symlink from {:?} to {:?}, error: {}", &absolute_from, &absolute_to, error);
+      }
     }
   }
 
@@ -38,7 +40,9 @@ pub fn remove_symlinks(directory: &PathBuf) -> std::io::Result<()> {
       // non-symlinks. And the safer way to checks if a child is a symlink
       // is to try to parse the symlink. And this operation fails if it's not
       // a symlink.
-      remove_symlink(&child.path());
+      if let Err(error) = remove_symlink(&child.path()) {
+        println!("could not remove child symlink at {:?}, error: {}", &child.path(), error);
+      }
     }
   }
 

@@ -1,7 +1,7 @@
 use maud::{html, Markup};
 
 pub fn header(page_title: &str) -> Markup {
-  let css_path = format!("/static/{}.css", page_title);
+  // let css_path = format!("/static/{}.css", page_title);
 
   html! {
     head {

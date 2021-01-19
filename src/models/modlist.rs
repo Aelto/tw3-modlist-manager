@@ -1,7 +1,6 @@
 
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::collections::HashSet;
 use serde::{Deserialize, Serialize};
 use toml;
 
@@ -267,12 +266,28 @@ impl ModList {
     
     // first, we remove all existing symlinks if they exist
     // let them fail if the paths do not exist
-    remove_symlink(&current_mods_path);
-    remove_symlink(&current_dlc_path);
-    remove_symlink(&current_menu_path);
-    remove_symlink(&current_saves_path);
-    remove_symlink(&current_content_path);
-    remove_symlink(&current_bundles_path);
+    if let Err(error) = remove_symlink(&current_mods_path) {
+      println!("could not remove current mod symlink: {}", error);
+    }
+    if let Err(error) = remove_symlink(&current_dlc_path) {
+      println!("could not remove current dlc symlink: {}", error);
+    }
+
+    if let Err(error) = remove_symlink(&current_menu_path) {
+      println!("could not remove current menu symlink: {}", error);
+    }
+
+    if let Err(error) = remove_symlink(&current_saves_path) {
+      println!("could not remove current saves symlink: {}", error);
+    }
+    
+    if let Err(error) = remove_symlink(&current_content_path) {
+      println!("could not remove current content symlink: {}", error);
+    }
+    
+    if let Err(error) = remove_symlink(&current_bundles_path) {
+      println!("could not remove current bundles symlink: {}", error);
+    }
 
     // then we create the symlinks to the current modlist directories
     make_symlink(&current_mods_path, &self.mods_path())?;
@@ -301,9 +316,13 @@ impl ModList {
     // we do this operation only if the scriptmerger is installed at the right place
     // AND the modlist we're installing has a mergeinventory file
     if scriptmerger_path.exists() && modlist_mergeinventory_path.exists() {
-      let scriptmerger_mergeinventory_path = scriptmerger_path.join("MergeInventory.xml");
+      let scriptmerger_mergeinventory_path = scriptmerger_path.join(constants::MODLIST_MERGEINVENTORY_PATH);
 
-      remove_symlink(&scriptmerger_mergeinventory_path);
+      if let Err(error) = remove_symlink(&scriptmerger_mergeinventory_path) {
+        // let it fail on purpose, just add a log for debugging
+        println!("could not remove scriptmerger mergeinventory: {}", error)
+      }
+
       make_symlink(&scriptmerger_mergeinventory_path, &modlist_mergeinventory_path)?;
     }
     
