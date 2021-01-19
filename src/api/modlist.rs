@@ -453,3 +453,59 @@ pub async fn view_modlist(_req: HttpRequest, form: web::Form<ViewModListBody>) -
       .body("modlist viewed")
   )
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct MergeModListBody {
+  pub modlist_name: String
+}
+
+pub async fn merge_modlist(_req: HttpRequest, form: web::Form<MergeModListBody>) -> Result<HttpResponse> {
+  let modlist = ModList::get_by_name(&form.modlist_name);
+
+  if modlist.is_none() {
+    return Ok(
+      HttpResponse::NotFound()
+        .content_type("text/plain")
+        .body("no such modlist")
+    )
+  }
+
+  let modlist = modlist.unwrap();
+
+  // first we install the modlist as scriptmerger can only work on an installed
+  // modlist
+  modlist.install()
+  .map_err(|err| {
+    HttpResponse::InternalServerError()
+      .content_type("text/plain")
+        .body(format!("Internal server error: could not install modlist {}. {}", modlist.name, err))
+  })?;
+
+  let scriptmerger_path = std::env::current_dir()
+    .unwrap()
+    .join(constants::SCRIPTMERGER_PATH);
+
+  std::process::Command::new("cmd")
+    .arg("/C")
+    .arg("start")
+    .arg("/D")
+    .arg(scriptmerger_path)
+    .arg(constants::SCRIPTMERGER_EXE_NAME)
+    .output()
+    .map_err(|err| {
+      HttpResponse::InternalServerError()
+          .content_type("text/plain")
+          .body(format!("Internal server error: could not merge modlist. {}.
+          Make sure your scriptmerger is installed in the correct directory,
+          please refer to the written documentation about merging modlists for
+          more information", err))
+    })?;
+
+
+  Ok(
+    HttpResponse::Found()
+      .header(http::header::LOCATION, format!("/modlist/{}", form.modlist_name))
+      .content_type("text/plain")
+      .body("modlist viewed")
+  )
+}

@@ -47,13 +47,21 @@ pub async fn render(req: HttpRequest) -> HttpResponse {
     section {
       h1 {
         (modlist.name)
+      }
+
+      div class="row even" {
         form method="post" action="/api/modlist/view" {
           input type="hidden" name="modlist_name" value=(modlist.name);
-          input type="submit" value="view" class="small text-style";
+          input type="submit" value="view" class="text-style";
+        }
+
+        form method="post" action="/api/modlist/merge" {
+          input type="hidden" name="modlist_name" value=(modlist.name);
+          input type="submit" value="merge" class="text-style";
         }
       }
 
-      div {
+      section class="imports" {
         // h2 { "imported modlists" }
 
         div class="row even" {
@@ -117,6 +125,8 @@ pub async fn render(req: HttpRequest) -> HttpResponse {
           }
         }
       }
+
+      style type="text/css" { (get_stylesheet()) }
     }
   };
 
@@ -125,4 +135,16 @@ pub async fn render(req: HttpRequest) -> HttpResponse {
   HttpResponse::Ok()
   .content_type("text/html")
   .body(view.into_string())
+}
+
+fn get_stylesheet() -> String {
+  "
+    h1 {
+      margin-bottom: 0;
+    }
+
+    section.imports {
+      margin-top: 3em;
+    }
+  ".to_owned()
 }

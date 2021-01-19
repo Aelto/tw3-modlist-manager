@@ -68,6 +68,7 @@ async fn main() -> std::io::Result<()> {
         .route("/modlist/move-import-up", web::post().to(api::modlist::move_imported_modlist_up))
         .route("/modlist/move-import-down", web::post().to(api::modlist::move_imported_modlist_down))
         .route("/modlist/view", web::post().to(api::modlist::view_modlist))
+        .route("/modlist/merge", web::post().to(api::modlist::merge_modlist))
     )
 
   })
