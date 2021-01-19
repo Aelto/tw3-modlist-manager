@@ -286,9 +286,9 @@ pub async fn initialize(_req: HttpRequest) -> Result<HttpResponse> {
   .and_then(|_| {
     fs::rename(&current_saves_path, &vanilla_saves_path)
     .or_else(|_| {
-      copy_across_drives(current_saves_path.clone(), vanilla_saves_path)?;
+      copy_across_drives(current_saves_path.clone(), vanilla_saves_path.clone())?;
 
-      fs::remove_dir_all(current_saves_path)?;
+      fs::remove_dir_all(&current_saves_path)?;
 
       Ok(())
     })
