@@ -358,6 +358,15 @@ impl ModList {
     fs::create_dir_all(modlist.content_path())?;
     fs::create_dir_all(modlist.bundles_path())?;
 
+    let mergeinventory_content = "
+      <?xml version=\"1.0\" encoding=\"utf-8\"?>
+      <MergeInventory xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">
+        
+      </MergeInventory>
+    ".trim();
+
+    fs::write(modlist.mergeinventory_path(), &mergeinventory_content)?;
+
     Ok(modlist)
   }
 }
