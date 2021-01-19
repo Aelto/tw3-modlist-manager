@@ -7,6 +7,7 @@ use crate::constants;
 use dirs;
 
 use crate::utils::api_error::api_error;
+use crate::utils::copy_across_drives;
 use crate::models::modlist::ModList;
 
 #[derive(Serialize, Deserialize)]
@@ -285,9 +286,9 @@ pub async fn initialize(_req: HttpRequest) -> Result<HttpResponse> {
   .and_then(|_| {
     fs::rename(&current_saves_path, &vanilla_saves_path)
     .or_else(|_| {
-      fs::copy(&current_saves_path, &vanilla_saves_path)?;
+      copy_across_drives(current_saves_path.clone(), vanilla_saves_path)?;
 
-      fs::remove_dir_all(&current_saves_path)?;
+      fs::remove_dir_all(current_saves_path)?;
 
       Ok(())
     })
@@ -506,6 +507,6 @@ pub async fn merge_modlist(_req: HttpRequest, form: web::Form<MergeModListBody>)
     HttpResponse::Found()
       .header(http::header::LOCATION, format!("/modlist/{}", form.modlist_name))
       .content_type("text/plain")
-      .body("modlist viewed")
+      .body("modlist merged")
   )
 }
