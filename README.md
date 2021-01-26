@@ -7,7 +7,7 @@ Small utility to manage different mod lists for the game The Witcher 3
 - create a directory in your witcher install `The Witcher 3` called `modlists`, so that you have `The Witcher 3/modlists`
 
 # Using it
-**IMPORTANT:** The tool has to run with administrator privileges to function correctly. This is because Windows stops simple program from creating symlinks, which is what this tool uses to be so efficient and fast.
+**IMPORTANT:** The tool has to run with administrator privileges to function correctly. This is because Windows prevents simple programs from creating symlinks, which is what this tool uses to be so efficient and fast. You can do so on Windows by right clicking the executable and click "Run as Administrator". _Please be aware that running a program as administrator is usually a bad idea as it gives full access to your computer. In this case the tool is open source, which means you can see its [source code](https://github.com/Aelto/tw3-modlist-manager/tree/main/src) and confirm it doesn't do more than it should. But i thought i'd still talk about that point just so you're aware!_
 
 On first launch the option to `initialize` is available. This option moves the necessary vanilla files into a modlist called `vanilla`, so the files will be moved into `The Witcher 3/modlists/vanilla` (in case you want to revert it). Of course, if your current install was a modded game, your vanilla modlist won't be exactly vanilla but your current install.
 
