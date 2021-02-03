@@ -23,24 +23,22 @@ async fn main() -> std::io::Result<()> {
     .and_then(|n| n.parse::<u16>().ok())
     .unwrap_or(5000);
 
-  
+  std::process::Command::new("cmd")
+    .arg("/C")
+    .arg("taskkill")
+    .arg("/f")
+    .arg("/im")
+    .arg(get_program_name().expect("cannot get program name"))
+    .arg("/fi")
+    .arg(format!("PID ne {}", std::process::id()))
+    .output()?;
+
   // open a new browser tab
   std::process::Command::new("cmd")
       .arg("/C")
       .arg("start")
       .arg(format!("http://localhost:{}", port))
       .output()?;
-
-  let is_already_running = is_already_running()
-    .unwrap_or_else(|error| {
-      println!("{}", error);
-
-      true
-    });
-
-  if is_already_running {
-    std::process::exit(0);
-  }
 
   println!("starting server on port {}", port);
 
@@ -75,34 +73,6 @@ async fn main() -> std::io::Result<()> {
   .bind(format!("127.0.0.1:{}", port))?
   .run()
   .await
-}
-
-fn is_already_running() -> Result<bool, String> {
-  // open a new browser tab
-  let output = std::process::Command::new("cmd")
-      .arg("/C")
-      .arg("tasklist")
-      .arg("/NH")
-      .arg("/FO")
-      .arg("TABLE")
-      .arg("/FI")
-      .arg("IMAGENAME eq tw3-modlist-manager.exe")
-      .output()
-      .map_err(|err| format!("error with the tasklist command: {}", err))?;
-
-  if !output.status.success() {
-    return Ok(false);
-  }
-
-  let program_name = get_program_name()?;
-  let program_count = String::from_utf8(output.stdout)
-    .map_err(|_| "could not serialize tasklist command output")?
-    
-    .matches(&program_name)
-    .count();
-
-
-  Ok(program_count > 1)
 }
 
 fn get_program_name() -> Result<String, String> {
