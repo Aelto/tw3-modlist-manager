@@ -84,7 +84,7 @@ pub async fn import_modlist(_req: HttpRequest, form: web::Form<ImportModListBody
 
   let mut modlist = modlist.unwrap();
   
-  modlist.read_imports_from_disk()
+  modlist.read_metadata_from_disk()
   .map_err(|err| {
     HttpResponse::InternalServerError()
         .content_type("text/plain")
@@ -93,7 +93,7 @@ pub async fn import_modlist(_req: HttpRequest, form: web::Form<ImportModListBody
 
   modlist.import_modlist(&form.imported_name);
 
-  modlist.write_imports_to_disk()
+  modlist.write_metadata_to_disk()
   .map_err(|err| {
     HttpResponse::InternalServerError()
         .content_type("text/plain")
@@ -128,7 +128,7 @@ pub async fn remove_imported_modlist(_req: HttpRequest, form: web::Form<RemoveIm
 
   let mut modlist = modlist.unwrap();
   
-  modlist.read_imports_from_disk()
+  modlist.read_metadata_from_disk()
   .map_err(|err| {
     HttpResponse::InternalServerError()
         .content_type("text/plain")
@@ -137,7 +137,7 @@ pub async fn remove_imported_modlist(_req: HttpRequest, form: web::Form<RemoveIm
 
   modlist.remove_import(&form.imported_name);
 
-  modlist.write_imports_to_disk()
+  modlist.write_metadata_to_disk()
   .map_err(|err| {
     HttpResponse::InternalServerError()
         .content_type("text/plain")
@@ -352,7 +352,7 @@ pub async fn move_imported_modlist_down(_req: HttpRequest, form: web::Form<MoveM
 
   let mut modlist = modlist.unwrap();
 
-  modlist.read_imports_from_disk()
+  modlist.read_metadata_from_disk()
   .map_err(|err| {
     HttpResponse::InternalServerError()
         .content_type("text/plain")
@@ -361,7 +361,7 @@ pub async fn move_imported_modlist_down(_req: HttpRequest, form: web::Form<MoveM
 
   modlist.move_import_down(&form.imported_modlist_name);
 
-  modlist.write_imports_to_disk()
+  modlist.write_metadata_to_disk()
   .map_err(|err| {
     HttpResponse::InternalServerError()
         .content_type("text/plain")
@@ -395,7 +395,7 @@ pub async fn move_imported_modlist_up(_req: HttpRequest, form: web::Form<MoveMod
 
   let mut modlist = modlist.unwrap();
 
-  modlist.read_imports_from_disk()
+  modlist.read_metadata_from_disk()
   .map_err(|err| {
     HttpResponse::InternalServerError()
         .content_type("text/plain")
@@ -404,7 +404,7 @@ pub async fn move_imported_modlist_up(_req: HttpRequest, form: web::Form<MoveMod
 
   modlist.move_import_up(&form.imported_modlist_name);
 
-  modlist.write_imports_to_disk()
+  modlist.write_metadata_to_disk()
   .map_err(|err| {
     HttpResponse::InternalServerError()
         .content_type("text/plain")
@@ -508,5 +508,155 @@ pub async fn merge_modlist(_req: HttpRequest, form: web::Form<MergeModListBody>)
       .header(http::header::LOCATION, format!("/modlist/{}", form.modlist_name))
       .content_type("text/plain")
       .body("modlist merged")
+  )
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ModlistVisibilityUpBody {
+  pub modlist_name: String,
+}
+
+pub async fn modlist_visibility_up(_req: HttpRequest, form: web::Form<ModlistVisibilityUpBody>) -> Result<HttpResponse> {
+  let modlist = ModList::get_by_name(&form.modlist_name);
+
+  if modlist.is_none() {
+    return Ok(
+      HttpResponse::NotFound()
+        .content_type("text/plain")
+        .body("no such modlist")
+    )
+  }
+
+  let mut modlist = modlist.unwrap();
+
+  modlist.read_metadata_from_disk()
+  .map_err(|err| {
+    HttpResponse::InternalServerError()
+        .content_type("text/plain")
+        .body(format!("Internal server error: could not read modlist metadata. {}", err))
+  })?;
+
+  modlist.visibility += 1;
+
+  modlist.write_metadata_to_disk()
+  .map_err(|err| {
+    HttpResponse::InternalServerError()
+        .content_type("text/plain")
+        .body(format!("Internal server error: could not write modlist metadata. {}", err))
+  })?;
+
+  Ok(
+    HttpResponse::Found()
+      .header(http::header::LOCATION, format!("/modlist/{}", form.modlist_name))
+      .content_type("text/plain")
+      .body("visibility decreased")
+  )
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ModlistVisibilityDownBody {
+  pub modlist_name: String,
+}
+
+pub async fn modlist_visibility_down(_req: HttpRequest, form: web::Form<ModlistVisibilityDownBody>) -> Result<HttpResponse> {
+  let modlist = ModList::get_by_name(&form.modlist_name);
+
+  if modlist.is_none() {
+    return Ok(
+      HttpResponse::NotFound()
+        .content_type("text/plain")
+        .body("no such modlist")
+    )
+  }
+
+  let mut modlist = modlist.unwrap();
+
+  modlist.read_metadata_from_disk()
+  .map_err(|err| {
+    HttpResponse::InternalServerError()
+        .content_type("text/plain")
+        .body(format!("Internal server error: could not read modlist metadata. {}", err))
+  })?;
+
+  modlist.visibility -= 1;
+
+  modlist.write_metadata_to_disk()
+  .map_err(|err| {
+    HttpResponse::InternalServerError()
+        .content_type("text/plain")
+        .body(format!("Internal server error: could not write modlist metadata. {}", err))
+  })?;
+
+  Ok(
+    HttpResponse::Found()
+      .header(http::header::LOCATION, format!("/modlist/{}", form.modlist_name))
+      .content_type("text/plain")
+      .body("visibility increased")
+  )
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct PackModlistBody {
+  pub modlist_name: String,
+}
+
+pub async fn pack_modlist(_req: HttpRequest, form: web::Form<PackModlistBody>) -> Result<HttpResponse> {
+  let modlist = ModList::get_by_name(&form.modlist_name);
+
+  if modlist.is_none() {
+    return Ok(
+      HttpResponse::NotFound()
+        .content_type("text/plain")
+        .body("no such modlist")
+    )
+  }
+
+  let modlist = modlist.unwrap();
+
+  modlist.pack()
+  .map_err(|err| {
+    HttpResponse::InternalServerError()
+        .content_type("text/plain")
+        .body(format!("Internal server error: could not pack the modlist. {}", err))
+  })?;
+
+  Ok(
+    HttpResponse::Found()
+      .header(http::header::LOCATION, format!("/modlist/{}", form.modlist_name))
+      .content_type("text/plain")
+      .body("modlist packed")
+  )
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct UnpackModlistBody {
+  pub modlist_name: String,
+}
+
+pub async fn unpack_modlist(_req: HttpRequest, form: web::Form<UnpackModlistBody>) -> Result<HttpResponse> {
+  let modlist = ModList::get_by_name(&form.modlist_name);
+
+  if modlist.is_none() {
+    return Ok(
+      HttpResponse::NotFound()
+        .content_type("text/plain")
+        .body("no such modlist")
+    )
+  }
+
+  let modlist = modlist.unwrap();
+
+  modlist.unpack()
+  .map_err(|err| {
+    HttpResponse::InternalServerError()
+        .content_type("text/plain")
+        .body(format!("Internal server error: could not unpack the modlist. {}", err))
+  })?;
+
+  Ok(
+    HttpResponse::Found()
+      .header(http::header::LOCATION, format!("/modlist/{}", form.modlist_name))
+      .content_type("text/plain")
+      .body("modlist unpacked")
   )
 }

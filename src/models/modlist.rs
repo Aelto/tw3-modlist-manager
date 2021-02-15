@@ -1,8 +1,10 @@
 
 use std::fs;
 use std::path::{Path, PathBuf};
+use fs::{copy, remove_dir_all};
 use serde::{Deserialize, Serialize};
 use toml;
+use fs_extra;
 
 use crate::constants;
 use crate::utils::symlinks::{
@@ -14,9 +16,11 @@ use crate::utils::symlinks::{
 
 
 
+
 #[derive(Deserialize, Serialize)]
 pub struct ModListConfig {
-  imports: Vec<String>
+  imports: Vec<String>,
+  visibility: Option<i64>
 }
 
 #[derive(Deserialize, Serialize)]
@@ -25,6 +29,7 @@ pub struct ImportedModlist {
   pub order: i64
 }
 
+#[derive(Clone, Debug)]
 pub struct ModList {
   pub name: String,
   
@@ -32,13 +37,16 @@ pub struct ModList {
   /// because the ordering is important as it is used as the load order from top
   /// to bottom.
   pub imported_modlists: Vec<String>,
+
+  pub visibility: i64,
 }
 
 impl ModList {
   pub fn new(name: String) -> ModList {
     ModList {
       name,
-      imported_modlists: Vec::new()
+      imported_modlists: Vec::new(),
+      visibility: 0
     }
   }
 
@@ -93,7 +101,7 @@ impl ModList {
   }
 
   /// fill the `Self.imported_modlists` with the data it reads from the disk
-  pub fn read_imports_from_disk(&mut self) -> std::io::Result<()> {
+  pub fn read_metadata_from_disk(&mut self) -> std::io::Result<()> {
     let config_path = self.config_path();
 
     if !config_path.exists() {
@@ -108,16 +116,27 @@ impl ModList {
       self.import_modlist(&import);
     }
 
+    self.visibility = toml_config.visibility.unwrap_or(0);
+
     Ok(())
   }
 
+  pub fn read_metadata_from_disk_copy(&self) -> std::io::Result<Self> {
+    let mut copy = self.clone();
+
+    copy.read_metadata_from_disk()?;
+
+    Ok(copy)
+  }
+
   /// update the import list of the disk with the new data in memory
-  pub fn write_imports_to_disk(&self) -> Result<(), String> {
+  pub fn write_metadata_to_disk(&self) -> Result<(), String> {
     let config = ModListConfig {
       imports: (&self.imported_modlists)
         .into_iter()
         .map(String::from)
-        .collect()
+        .collect(),
+      visibility: Some(self.visibility)
     };
 
     let content = toml::to_string_pretty(&config)
@@ -144,7 +163,7 @@ impl ModList {
   /// load all imported modlists in the current modlist directories in the form
   /// of symlinks pointing to the other modlists' directories.
   pub fn load_imported_modlists(&mut self) -> std::io::Result<()> {
-    self.read_imports_from_disk()?;
+    self.read_metadata_from_disk()?;
 
     let valid_imported_modlists = self.imported_modlists
       .iter()
@@ -220,6 +239,21 @@ impl ModList {
   pub fn mergeinventory_path(&self) -> PathBuf {
     self.path()
       .join(constants::MODLIST_MERGEINVENTORY_PATH)
+  }
+
+  pub fn packbackup_path(&self) -> PathBuf {
+    self.mods_path()
+      .join(format!("~{}.pack-backup", self.name))
+  }
+
+  pub fn pack_path(&self) -> PathBuf {
+    self.mods_path()
+      .join(format!("mod0000_{}", self.name))
+  }
+
+  pub fn mergedfiles_path(&self) -> PathBuf {
+    self.mods_path()
+      .join(constants::SCRIPTMERGER_MERGEDFILES_FOLDERNAME)
   }
 
   pub fn is_valid(&self) -> bool {
@@ -326,6 +360,152 @@ impl ModList {
       make_symlink(&scriptmerger_mergeinventory_path, &modlist_mergeinventory_path)?;
     }
     
+    Ok(())
+  }
+
+  pub fn is_packed(&self) -> bool {
+    return self.packbackup_path().is_dir()
+        && self.pack_path().is_dir();
+  }
+
+  pub fn pack(&self) -> std::io::Result<()> {
+    let packbackup = self.packbackup_path();
+
+    // return an error when there is no mergedfiles folder
+    if !self.mergedfiles_path().exists() {
+      let error = std::io::Error::new(
+        std::io::ErrorKind::NotFound,
+        "no mergedfiles folder, nothing to pack"
+      );
+
+      return Err(error);
+    }
+
+    // first we start by removing the old pack backup if it already exists.
+    if self.is_packed() {
+      fs::remove_dir_all(&packbackup)?;
+    }
+
+    // then we create the directory.
+    fs::create_dir_all(&packbackup)?;
+
+    let pack_scripts_path = self.pack_path()
+      .join("content")
+      .join("scripts");
+
+    // preparing the pack folder
+    fs::create_dir_all(&pack_scripts_path)?;
+
+    let modspath = self.mods_path();
+    for mod_result in fs::read_dir(&modspath)? {
+      if let Ok(modname) = mod_result {
+        let modpath = modname.path();
+
+        if modpath.file_name().unwrap().to_str().unwrap().starts_with("~") {
+          continue;
+        }
+
+        let mod_scripts_path = &modspath
+          .join(&modpath)
+          .join("content")
+          .join("scripts");
+
+        println!("modpath: {:?}", &modpath);
+
+        // nothing to do when the mod has no scripts folder
+        if !mod_scripts_path.is_dir() {
+          continue;
+        }
+
+        // then copy it in the pack folder
+        let mut options = fs_extra::dir::CopyOptions::new();
+        options.skip_exist = true;
+        options.content_only = true;
+        
+        fs_extra::dir::copy(
+          &mod_scripts_path,
+          &pack_scripts_path,
+          &options
+        ).map_err(|_| std::io::ErrorKind::NotFound)?;
+
+        // then we rename the script in the mod so that the scriptmerger won't
+        // consider it a script mod if the modlist is imported by another modlist
+        // and the user wants to merge the modlist.
+        
+      }
+    }
+
+    // and the final step is to manually drop the mergedfiles in the pack folder
+    // and overwrite anything that already exist so it's considered a valid mod.
+    //
+    // Normally the mergedfiles scripts are already in the pack and because we use
+    // `skip_exist = true` it should keep the mergedfiles scripts. But we can't be
+    // sure the mergedfiles were the first to be loaded so it's safer to copy the
+    // mergedfiles scripts again just to be sure but this time with `overwrite = true`
+    let mut options = fs_extra::dir::CopyOptions::new();
+    options.overwrite = true;
+    options.content_only = true;
+
+    let mergedfiles_scripts_path = self.mergedfiles_path()
+      .join("content")
+      .join("scripts");
+
+    fs_extra::dir::copy(
+      mergedfiles_scripts_path,
+      self.pack_path()
+            .join("content")
+            .join("scripts"),
+      &options
+    ).map_err(|_| std::io::ErrorKind::NotFound)?;
+
+    // once it's done we move the original mergedfiles folder in the packbackup
+    // folder. So when the modlist is unpacked the mergedfiles folder is restored
+    fs::rename(
+      self.mergedfiles_path(),
+      self.packbackup_path()
+        .join(constants::SCRIPTMERGER_MERGEDFILES_FOLDERNAME)
+    )?;
+
+    Ok(())
+  }
+
+  // if the current modlist is packed, use the packbackup folder to restore the
+  // original state of the mods (mergedfiles included)
+  pub fn unpack(&self) -> std::io::Result<()> {
+    if !self.is_packed() {
+      return Ok(())
+    }
+
+    let packbackup = self.packbackup_path();
+    let modspath = self.mods_path();
+    for mod_result in fs::read_dir(&packbackup)? {
+      if let Ok(modname) = mod_result {
+        let modpath = modname.path();
+        
+        let backedup_mod_path = &packbackup
+          .join(&modpath);
+        
+        let restored_mod_path = &modspath
+          .join(&modpath);
+
+        fs::create_dir_all(&restored_mod_path)?;
+
+        let mut options = fs_extra::dir::CopyOptions::new();
+        options.overwrite = true;
+        options.content_only = true;
+
+        
+        fs_extra::dir::copy(
+          &backedup_mod_path,
+          &restored_mod_path,
+          &options
+        ).map_err(|_| std::io::ErrorKind::NotFound)?;
+      }
+    }
+
+    // and once it's all restored we can remove the packbackup folder
+    fs::remove_dir_all(&packbackup)?;
+
     Ok(())
   }
 

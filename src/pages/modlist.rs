@@ -26,7 +26,7 @@ pub async fn render(req: HttpRequest) -> HttpResponse {
 
   let mut modlist = some_modlist.unwrap();
   
-  if let Err(error) = modlist.read_imports_from_disk() {
+  if let Err(error) = modlist.read_metadata_from_disk() {
     let content = html! {
       h1 { "Could not read modlist metadata" }
       p { (error) }
@@ -43,10 +43,65 @@ pub async fn render(req: HttpRequest) -> HttpResponse {
     .iter()
     .filter(|ml| modlist.name != ml.name);
 
+  let packing_help = "
+    Packing transforms a modlist in a way that allows you to pre-merge the mods
+    and then re-use the merged mods directly the next time you import the modlist.
+
+    What it does:
+      It creates a new fake mod with all the script mods there are curerntly in
+      the modlist and sets the mod as a high-priority mod so it is loaded before
+      the regular mods. And then, it takes the current mergedfiles folder (your merged mods)
+      and places its content into the fake mod too. So you now have a fake mod
+      that is actually all your mods but already merged.
+
+    So now you can import the modlist and merge the full modlist without having
+    to merge the mods again.
+    
+    You can always revert this change by clicking the unpack button after you
+    packed a modlist.
+    
+    IMPORTANT: You should always pack AFTER merging the mods.
+  ";
+
+  let unpacking_help = "
+    the unpacking option is available when the modlist manager detects the modlist
+    is in a packaged state. The modlist is in the packaged state when the pack-backup
+    folder is found.
+
+    unpacking a modlist retrieves all the backed-up mods from before the modlist
+    was packaged and restores everything including the mergedfiles. Note that if
+    you made changes to mods that were packaged AFTER packaging the modlist, the
+    changes will be erased. New mods are safe though.
+
+    use this option only if you want to change the modlist, add or remove a mod,
+    or make changes to the merges.
+    You will then have the option to pack the modlist again if you want to.
+  ";
+
   let content = html! {
     section {
       h1 {
         (modlist.name)
+      }
+
+      div class="row even" {
+        label title="The visibility level allows you based on an arbitrary value you set them.
+        The value can be either positive or negative and is set at 0 by default" { "visibility:" }
+        span {(modlist.visibility)};
+
+        form method="post" action="/api/modlist/visibility-down" {
+          input type="hidden" name="modlist_name" value=(modlist.name);
+          input type="hidden" name="imported_modlist_name" value="-1";
+
+          input type="submit" class="rotate-90-clockwise text-style" value=">";
+        }
+
+        form method="post" action="/api/modlist/visibility-up" {
+          input type="hidden" name="modlist_name" value=(modlist.name);
+          input type="hidden" name="imported_modlist_name" value="1";
+
+          input type="submit" class="rotate-90-clockwise text-style" value="<";
+        }
       }
 
       div class="row even" {
@@ -55,9 +110,23 @@ pub async fn render(req: HttpRequest) -> HttpResponse {
           input type="submit" value="view" class="text-style";
         }
 
-        form method="post" action="/api/modlist/merge" {
-          input type="hidden" name="modlist_name" value=(modlist.name);
-          input type="submit" value="merge" class="text-style";
+        @if !modlist.is_packed() {
+          form method="post" action="/api/modlist/merge" {
+            input type="hidden" name="modlist_name" value=(modlist.name);
+            input type="submit" value="merge" class="text-style";
+          }
+        }
+
+        @if modlist.is_packed() {
+          form method="post" action="/api/modlist/unpack" {
+            input type="hidden" name="modlist_name" value=(modlist.name);
+            input type="submit" value="unpack" class="text-style" title=(unpacking_help);
+          }
+        } @else {
+          form method="post" action="/api/modlist/pack" {
+            input type="hidden" name="modlist_name" value=(modlist.name);
+            input type="submit" value="pack" class="text-style" title=(packing_help);
+          }
         }
       }
 

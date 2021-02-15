@@ -2,7 +2,7 @@
 
 // uncomment the line below when building a release.
 // It allows the binary to start in background without a cli window.
-#![windows_subsystem = "windows"]
+// #![windows_subsystem = "windows"]
 
 extern crate chrono;
 
@@ -65,8 +65,13 @@ async fn main() -> std::io::Result<()> {
         .route("/modlist/unload-imports", web::post().to(api::modlist::unload_imports_modlist))
         .route("/modlist/move-import-up", web::post().to(api::modlist::move_imported_modlist_up))
         .route("/modlist/move-import-down", web::post().to(api::modlist::move_imported_modlist_down))
+        .route("/modlist/move-import-down", web::post().to(api::modlist::move_imported_modlist_down))
+        .route("/modlist/visibility-up", web::post().to(api::modlist::modlist_visibility_up))
+        .route("/modlist/visibility-down", web::post().to(api::modlist::modlist_visibility_down))
         .route("/modlist/view", web::post().to(api::modlist::view_modlist))
         .route("/modlist/merge", web::post().to(api::modlist::merge_modlist))
+        .route("/modlist/pack", web::post().to(api::modlist::pack_modlist))
+        .route("/modlist/unpack", web::post().to(api::modlist::unpack_modlist))
     )
 
   })

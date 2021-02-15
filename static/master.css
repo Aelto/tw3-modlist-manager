@@ -85,6 +85,7 @@ li input {
   background: none;
   border: none;
   color: var(--var-color-accent);
+  cursor: pointer;
 }
 
 .small {
@@ -93,4 +94,8 @@ li input {
 
 .flex-end {
   justify-content: flex-end;
+}
+
+.flex-center {
+  justify-content: center;
 }

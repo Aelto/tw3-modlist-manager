@@ -113,6 +113,7 @@ fn master_css_content() -> String {
     background: none;
     border: none;
     color: var(--var-color-accent);
+    cursor: pointer;
   }
 
   .small {
@@ -121,6 +122,10 @@ fn master_css_content() -> String {
 
   .flex-end {
     justify-content: flex-end;
+  }
+
+  .flex-center {
+    justify-content: center;
   }
   ".to_owned()
 }
