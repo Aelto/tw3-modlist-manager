@@ -241,11 +241,6 @@ impl ModList {
       .join(constants::MODLIST_MERGEINVENTORY_PATH)
   }
 
-  pub fn packbackup_path(&self) -> PathBuf {
-    self.mods_path()
-      .join(format!("~{}.pack-backup", self.name))
-  }
-
   pub fn pack_path(&self) -> PathBuf {
     self.mods_path()
       .join(format!("mod0000_{}", self.name))
@@ -254,6 +249,11 @@ impl ModList {
   pub fn mergedfiles_path(&self) -> PathBuf {
     self.mods_path()
       .join(constants::SCRIPTMERGER_MERGEDFILES_FOLDERNAME)
+  }
+
+  pub fn backedup_mergedfiles_path(&self) -> PathBuf {
+    self.mods_path()
+      .join(format!("~{}", constants::SCRIPTMERGER_MERGEDFILES_FOLDERNAME))
   }
 
   pub fn is_valid(&self) -> bool {
@@ -364,13 +364,10 @@ impl ModList {
   }
 
   pub fn is_packed(&self) -> bool {
-    return self.packbackup_path().is_dir()
-        && self.pack_path().is_dir();
+    return self.pack_path().is_dir();
   }
 
   pub fn pack(&self) -> std::io::Result<()> {
-    let packbackup = self.packbackup_path();
-
     // return an error when there is no mergedfiles folder
     if !self.mergedfiles_path().exists() {
       let error = std::io::Error::new(
@@ -381,13 +378,11 @@ impl ModList {
       return Err(error);
     }
 
-    // first we start by removing the old pack backup if it already exists.
-    if self.is_packed() {
-      fs::remove_dir_all(&packbackup)?;
-    }
-
-    // then we create the directory.
-    fs::create_dir_all(&packbackup)?;
+    // the first thing we do is to place the mergedfiles in a safe place
+    fs::rename(
+      self.mergedfiles_path(),
+      self.backedup_mergedfiles_path()
+    )?;
 
     let pack_scripts_path = self.pack_path()
       .join("content")
@@ -412,6 +407,10 @@ impl ModList {
 
         println!("modpath: {:?}", &modpath);
 
+        if mod_scripts_path == &pack_scripts_path {
+          continue;
+        }
+
         // nothing to do when the mod has no scripts folder
         if !mod_scripts_path.is_dir() {
           continue;
@@ -431,7 +430,12 @@ impl ModList {
         // then we rename the script in the mod so that the scriptmerger won't
         // consider it a script mod if the modlist is imported by another modlist
         // and the user wants to merge the modlist.
-        
+        let renamed_mod_scripts_path = &modspath
+          .join(&modpath)
+          .join("content")
+          .join("~scripts");
+
+        fs::rename(mod_scripts_path, renamed_mod_scripts_path)?;
       }
     }
 
@@ -446,7 +450,7 @@ impl ModList {
     options.overwrite = true;
     options.content_only = true;
 
-    let mergedfiles_scripts_path = self.mergedfiles_path()
+    let mergedfiles_scripts_path = self.backedup_mergedfiles_path()
       .join("content")
       .join("scripts");
 
@@ -458,14 +462,6 @@ impl ModList {
       &options
     ).map_err(|_| std::io::ErrorKind::NotFound)?;
 
-    // once it's done we move the original mergedfiles folder in the packbackup
-    // folder. So when the modlist is unpacked the mergedfiles folder is restored
-    fs::rename(
-      self.mergedfiles_path(),
-      self.packbackup_path()
-        .join(constants::SCRIPTMERGER_MERGEDFILES_FOLDERNAME)
-    )?;
-
     Ok(())
   }
 
@@ -476,35 +472,51 @@ impl ModList {
       return Ok(())
     }
 
-    let packbackup = self.packbackup_path();
-    let modspath = self.mods_path();
-    for mod_result in fs::read_dir(&packbackup)? {
-      if let Ok(modname) = mod_result {
-        let modpath = modname.path();
-        
-        let backedup_mod_path = &packbackup
-          .join(&modpath);
-        
-        let restored_mod_path = &modspath
-          .join(&modpath);
-
-        fs::create_dir_all(&restored_mod_path)?;
-
-        let mut options = fs_extra::dir::CopyOptions::new();
-        options.overwrite = true;
-        options.content_only = true;
-
-        
-        fs_extra::dir::copy(
-          &backedup_mod_path,
-          &restored_mod_path,
-          &options
-        ).map_err(|_| std::io::ErrorKind::NotFound)?;
-      }
+    if let Err(error) = fs::rename(
+      self.backedup_mergedfiles_path(),
+      self.mergedfiles_path(),
+    ) {
+      println!("could not rename the backedup mergedfiles to mergedfiles: {:?}", error);
     }
 
-    // and once it's all restored we can remove the packbackup folder
-    fs::remove_dir_all(&packbackup)?;
+    if let Err(error) = fs::remove_dir_all(self.pack_path()) {
+      println!("could not remove the pack path: {:?}", error);
+    };
+
+    let modspath = self.mods_path();
+    for mod_result in fs::read_dir(&modspath)? {
+      if let Ok(modname) = mod_result {
+        let modpath = modname.path();
+
+        if modpath.file_name().unwrap().to_str().unwrap().starts_with("~") {
+          continue;
+        }
+
+        let mod_scripts_path = &modspath
+          .join(&modpath)
+          .join("content")
+          .join("scripts");
+
+        println!("modpath: {:?}", &modpath);
+
+        let renamed_mod_scripts_path = &modspath
+          .join(&modpath)
+          .join("content")
+          .join("~scripts");
+
+        if !renamed_mod_scripts_path.is_dir() {
+          continue;
+        }
+
+        // if for some reason both folders exist at the same time just ignore it
+        // and continue.
+        if mod_scripts_path.is_dir() && renamed_mod_scripts_path.is_dir() {
+          continue;
+        }
+
+        fs::rename(renamed_mod_scripts_path, mod_scripts_path)?;
+      }
+    }
 
     Ok(())
   }

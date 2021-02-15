@@ -43,6 +43,11 @@ pub async fn render(req: HttpRequest) -> HttpResponse {
     .iter()
     .filter(|ml| modlist.name != ml.name);
 
+  let does_import_a_modlist = modlist.imported_modlists
+    .iter()
+    .filter(|modlist_name| modlist_name != &"vanilla")
+    .count() > 0;
+
   let packing_help = "
     Packing transforms a modlist in a way that allows you to pre-merge the mods
     and then re-use the merged mods directly the next time you import the modlist.
@@ -78,6 +83,17 @@ pub async fn render(req: HttpRequest) -> HttpResponse {
     You will then have the option to pack the modlist again if you want to.
   ";
 
+  let packing_blocked_help = "
+  Be aware that packing a modlist changes lots of things to
+  the mods that are installed in the modlist. So if your modlist happens to
+  import another modlist and you pack it, the imported modlist will be modified
+  too until you unpack it. The vanilla modlist being the exception as it doesn't
+  have any mods.
+  So in theory you should not pack a modlist that imports other modlists, and you
+  should organize your modlists in a way where you compose lots of small packed
+  modlists to build larger modlists. But the larger modlist should NEVER be packed.
+  ";
+
   let content = html! {
     section {
       h1 {
@@ -85,7 +101,7 @@ pub async fn render(req: HttpRequest) -> HttpResponse {
       }
 
       div class="row even" {
-        label title="The visibility level allows you based on an arbitrary value you set them.
+        label title="The visibility level you to filter modlists based on an arbitrary value you set.
         The value can be either positive or negative and is set at 0 by default" { "visibility:" }
         span {(modlist.visibility)};
 
@@ -123,9 +139,15 @@ pub async fn render(req: HttpRequest) -> HttpResponse {
             input type="submit" value="unpack" class="text-style" title=(unpacking_help);
           }
         } @else {
-          form method="post" action="/api/modlist/pack" {
-            input type="hidden" name="modlist_name" value=(modlist.name);
-            input type="submit" value="pack" class="text-style" title=(packing_help);
+          @if does_import_a_modlist {
+            form {
+              input type="submit" value="pack" class="text-style" disabled="true" title=(packing_blocked_help);
+            }
+          } @else {
+            form method="post" action="/api/modlist/pack" {
+              input type="hidden" name="modlist_name" value=(modlist.name);
+              input type="submit" value="pack" class="text-style" title=(packing_help);
+            }
           }
         }
       }

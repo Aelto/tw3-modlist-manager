@@ -116,6 +116,10 @@ fn master_css_content() -> String {
     cursor: pointer;
   }
 
+  .text-style:disabled {
+    text-decoration: line-through;
+  }
+
   .small {
     font-size: 0.6em;
   }
