@@ -13,7 +13,7 @@ pub async fn render(req: HttpRequest) -> HttpResponse {
   let visibility = query.get("visibility")
     .and_then(|n| n.parse::<i64>().ok());
   
-  let modlists = match visibility {
+  let mut modlists = match visibility {
     Some(v) => ModList::get_all()
       .iter()
       .map(ModList::read_metadata_from_disk_copy)
@@ -23,6 +23,24 @@ pub async fn render(req: HttpRequest) -> HttpResponse {
       .collect(),
     None => ModList::get_all()
   };
+
+
+  for i in 0..modlists.len() {
+    if let Err(error) = modlists[i].read_metadata_from_disk() {
+      let content = html! {
+        h1 { "Could not read modlist metadata" }
+        p { (error) }
+      };
+      let view = components::page("root", &content);
+    
+      return HttpResponse::Ok()
+      .content_type("text/html")
+      .body(view.into_string())
+    }
+  }
+
+  // sort the list so the modlists with the vanilla import appear first.
+  modlists.sort_by_key(|modlist| modlist.name != "vanilla" && !modlist.has_modlist_imported("vanilla"));
 
   // now that we don't need to know if it's Some or None, use a default value
   let visibility = visibility.unwrap_or(0);
@@ -42,7 +60,7 @@ pub async fn render(req: HttpRequest) -> HttpResponse {
         }
       }
       @else {
-        form method="post" action="/api/modlist/create" {
+        form class="create" method="post" action="/api/modlist/create" {
           input type="text" name="modlist_name";
           input type="submit" value="new";
         }
@@ -60,22 +78,28 @@ pub async fn render(req: HttpRequest) -> HttpResponse {
             li {
               a href={"/modlist/" (modlist.name)} { (modlist.name) }
   
-              form method="post" action="/api/modlist/install" {
-                input type="hidden" name="name" value=(modlist.name);
-                
-                input type="submit" value="install";
+              @if modlist.name == "vanilla" || modlist.has_modlist_imported("vanilla") {
+                form method="post" action="/api/modlist/install" {
+                  input type="hidden" name="name" value=(modlist.name);
+                  
+                  input type="submit" value="install";
+                }
+              } @else {
+                span title="you cannot install this modlist because it doesn't import the vanilla modlist" {}
               }
             }
           }
         }
 
         div class="row flex-end" {
-          form method="post" action="/api/program/exit" {
-            input type="submit" class="text-style" value="exit" onclick="setTimeout(() => window.close(), 1000);";
+          form method="post" action="/api/program/exit" onsubmit="setTimeout(() => window.close(), 1000)" {
+            input type="submit" class="text-style" value="exit";
           }
         }
       }
     }
+
+    style type="text/css" { (get_stylesheet()) }
   };
 
   let view = components::page("modlists", &content);
@@ -83,4 +107,16 @@ pub async fn render(req: HttpRequest) -> HttpResponse {
   HttpResponse::Ok()
   .content_type("text/html")
   .body(view.into_string())
+}
+
+fn get_stylesheet() -> String {
+  "
+    ul {
+      padding-left: 0;
+    }
+
+    .create input + input {
+      margin-left: 8px;
+    }
+  ".to_owned()
 }

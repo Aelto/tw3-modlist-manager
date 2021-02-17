@@ -8,10 +8,6 @@ pub fn header(page_title: &str) -> Markup {
       meta charset="utf-8";
       meta name="viewport" content="width=device-width, initial-scale=1.0";
       meta http-equiv="X-UA-Compatible" content="ie=edge";
-  
-      // used for debugging
-      // link href="/static/master.css" rel="stylesheet";
-      // link href=(css_path) rel="stylesheet";
 
       // the style is hardcoded because it allows me to ship a single binary
       // without any other files around it.
@@ -29,7 +25,7 @@ fn master_css_content() -> String {
   html, body {
     display: flex;
     flex-direction: column;
-    background:#12100f;
+    background: #171413;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
@@ -55,17 +51,32 @@ fn master_css_content() -> String {
   
   a {
     color: var(--var-color-accent);
+    text-decoration: none;
+  }
+
+  input[type='submit'] {
+    background: none;
+    color: grey;
+    outline: none;
+    border: none;
+    border-radius: 0;
+    cursor: pointer;
+    padding: 3px;
+  }
+
+  input[type='submit']:hover {
+    color: white;
   }
   
   #content {
     max-width: 450px;
-    /* background:#1d1d1d; */
+    background: #12100f;
     color: white;
   
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     padding: 1em;
     border-radius: 2px;
-    box-shadow: 0px 6px 12px 0px rgba(0, 0, 0, 1);
+    box-shadow: 0px 6px 24px 12px rgb(8 7 7);
     border-top: solid 6px var(--var-color-accent);
   }
   
@@ -76,6 +87,10 @@ fn master_css_content() -> String {
   
   .row.even {
     justify-content: space-evenly;
+  }
+
+  .center {
+    text-align: center;
   }
   
   h1 {

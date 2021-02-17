@@ -421,7 +421,8 @@ pub async fn move_imported_modlist_up(_req: HttpRequest, form: web::Form<MoveMod
 
 #[derive(Serialize, Deserialize)]
 pub struct ViewModListBody {
-  pub modlist_name: String
+  pub modlist_name: String,
+  pub folder_name: String
 }
 
 pub async fn view_modlist(_req: HttpRequest, form: web::Form<ViewModListBody>) -> Result<HttpResponse> {
@@ -438,7 +439,7 @@ pub async fn view_modlist(_req: HttpRequest, form: web::Form<ViewModListBody>) -
   let modlist = modlist.unwrap();
 
   std::process::Command::new("explorer")
-    .arg(modlist.path())
+    .arg(modlist.path().join(&form.folder_name))
     .output()
     .map_err(|err| {
       HttpResponse::InternalServerError()

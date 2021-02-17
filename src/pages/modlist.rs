@@ -17,7 +17,7 @@ pub async fn render(req: HttpRequest) -> HttpResponse {
     let content = html! {
       h1 { "no such modlist" }
     };
-    let view = components::page("root", &content);
+    let view = components::page(&format!("modlist - {}", modlist_name), &content);
   
     return HttpResponse::Ok()
     .content_type("text/html")
@@ -70,29 +70,59 @@ pub async fn render(req: HttpRequest) -> HttpResponse {
 
   let unpacking_help = "
     the unpacking option is available when the modlist manager detects the modlist
-    is in a packaged state. The modlist is in the packaged state when the pack-backup
-    folder is found.
+    is in a packaged state. The modlist is considered in the packaged state when
+    a mod with the same name as the modlist is found in the modlist.
 
-    unpacking a modlist retrieves all the backed-up mods from before the modlist
-    was packaged and restores everything including the mergedfiles. Note that if
-    you made changes to mods that were packaged AFTER packaging the modlist, the
-    changes will be erased. New mods are safe though.
+    unpacking a modlist enables all the disabled script mods to the state before
+    the modlist was packaged and restores everything including the mergedfiles.
+    Note that if you made changes to mods that were packaged AFTER packaging the
+    modlist, the changes will be erased. New mods are safe though.
 
     use this option only if you want to change the modlist, add or remove a mod,
-    or make changes to the merges.
-    You will then have the option to pack the modlist again if you want to.
+    or make changes to the merges. You will then have the option to pack the
+    modlist again if you want to.
   ";
 
   let packing_blocked_help = "
-  Be aware that packing a modlist changes lots of things to
-  the mods that are installed in the modlist. So if your modlist happens to
-  import another modlist and you pack it, the imported modlist will be modified
-  too until you unpack it. The vanilla modlist being the exception as it doesn't
-  have any mods.
-  So in theory you should not pack a modlist that imports other modlists, and you
-  should organize your modlists in a way where you compose lots of small packed
-  modlists to build larger modlists. But the larger modlist should NEVER be packed.
+Be aware that packing a modlist changes lots of things to
+the mods that are installed in the modlist. So if your modlist happens to
+import another modlist and you pack it, the imported modlist will be modified
+too until you unpack it. The vanilla modlist being the exception as it doesn't
+have any mods.
+So in theory you should not pack a modlist that imports other modlists, and you
+should organize your modlists in a way where you compose lots of small packed
+modlists to build larger modlists. But the larger modlist should NEVER be packed.
   ";
+
+  let visibility_level_help = "
+This number is the `visibility level` of the modlist. You will find the same number
+in the home page, which you can use to filter the modlists per visibility level.
+The value can either be positive or negative, and it's up to you to create a hierarchy
+you understand. For example, you could set modlists you install at level 1 and modlists
+that are imported by other modlists at level -1. This way, when you're on the home page
+you can go left and see the imported modlists or go right and see the modlists you
+can install.
+  ";
+
+  let merge_help = "
+opens the scriptmerger for this modlist and the current imported mods.
+
+NOTE: it doesn't load the imports automatically and you may have to load the imports
+first before proceeding.
+NOTE: if you merge a modlist that doesn't depend on vanilla, like a shared modlist
+you want to pack afterward you may still want to import & load vanilla while you
+merge because the scriptmerger (for some reason) fails to merge only two files.
+In this case, import vanilla, load the imports then merge. And after you've merged
+unload the import and remove vanilla and you can safely pack your modlist.
+  ";
+
+  let mods = modlist.get_children(modlist.mods_path()).join("\n");
+  let dlcs = modlist.get_children(modlist.dlcs_path()).join("\n");
+  let menus = modlist.get_children(modlist.menus_path()).join("\n");
+
+  let open_mods_help = format!("mods in the modlist:\n{}", mods);
+  let open_dlcs_help = format!("dlcs in the modlist:\n{}", dlcs);
+  let open_menus_help = format!("menus in the modlist:\n{}", menus);
 
   let content = html! {
     section {
@@ -100,36 +130,55 @@ pub async fn render(req: HttpRequest) -> HttpResponse {
         (modlist.name)
       }
 
-      div class="row even" {
-        label title="The visibility level you to filter modlists based on an arbitrary value you set.
-        The value can be either positive or negative and is set at 0 by default" { "visibility:" }
-        span {(modlist.visibility)};
-
+      div class="row flex-center" {
         form method="post" action="/api/modlist/visibility-down" {
           input type="hidden" name="modlist_name" value=(modlist.name);
           input type="hidden" name="imported_modlist_name" value="-1";
 
-          input type="submit" class="rotate-90-clockwise text-style" value=">";
+          input type="submit" class="text-style" value="<";
         }
+
+        span title=(visibility_level_help) {(modlist.visibility)};
 
         form method="post" action="/api/modlist/visibility-up" {
           input type="hidden" name="modlist_name" value=(modlist.name);
           input type="hidden" name="imported_modlist_name" value="1";
 
-          input type="submit" class="rotate-90-clockwise text-style" value="<";
+          input type="submit" class="text-style" value=">";
         }
       }
 
       div class="row even" {
         form method="post" action="/api/modlist/view" {
           input type="hidden" name="modlist_name" value=(modlist.name);
-          input type="submit" value="view" class="text-style";
+          input type="hidden" name="folder_name" value=".";
+          input type="submit" value="open" class="text-style";
         }
 
+        form method="post" action="/api/modlist/view" {
+          input type="hidden" name="modlist_name" value=(modlist.name);
+          input type="hidden" name="folder_name" value="mods";
+          input type="submit" value="mods" class="text-style" title=(open_mods_help);
+        }
+
+        form method="post" action="/api/modlist/view" {
+          input type="hidden" name="modlist_name" value=(modlist.name);
+          input type="hidden" name="folder_name" value="dlcs";
+          input type="submit" value="dlcs" class="text-style" title=(open_dlcs_help);
+        }
+
+        form method="post" action="/api/modlist/view" {
+          input type="hidden" name="modlist_name" value=(modlist.name);
+          input type="hidden" name="folder_name" value="menus";
+          input type="submit" value="menus" class="text-style" title=(open_menus_help);
+        }
+      }
+
+      div class="row even imports" {
         @if !modlist.is_packed() {
           form method="post" action="/api/modlist/merge" {
             input type="hidden" name="modlist_name" value=(modlist.name);
-            input type="submit" value="merge" class="text-style";
+            input type="submit" value="merge" class="text-style" title=(merge_help);
           }
         }
 
@@ -221,7 +270,7 @@ pub async fn render(req: HttpRequest) -> HttpResponse {
     }
   };
 
-  let view = components::page("root", &content);
+  let view = components::page(&format!("{} - modlist", modlist_name), &content);
   
   HttpResponse::Ok()
   .content_type("text/html")

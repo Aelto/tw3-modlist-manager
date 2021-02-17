@@ -243,7 +243,7 @@ impl ModList {
 
   pub fn pack_path(&self) -> PathBuf {
     self.mods_path()
-      .join(format!("mod0000_{}", self.name))
+      .join(format!("mod0001_{}", self.name.replace(".", "_")))
   }
 
   pub fn mergedfiles_path(&self) -> PathBuf {
@@ -254,6 +254,42 @@ impl ModList {
   pub fn backedup_mergedfiles_path(&self) -> PathBuf {
     self.mods_path()
       .join(format!("~{}", constants::SCRIPTMERGER_MERGEDFILES_FOLDERNAME))
+  }
+
+  pub fn get_children(&self, folder: PathBuf) -> Vec<String> {
+    let readdir = fs::read_dir(folder);
+
+    if readdir.is_err() {
+      return Vec::new();
+    }
+
+    let readdir = readdir.unwrap();
+    let mut output = Vec::new();
+    for child in readdir {
+      if child.is_err() {
+        continue;
+      }
+
+      let child = child.unwrap();
+      let name = child.file_name();
+      let name = name.into_string();
+
+      if name.is_err() {
+        continue;
+      }
+
+      let name = name.unwrap();
+
+      output.push(name);
+    }
+
+    output
+  }
+
+  pub fn has_modlist_imported(&self, modlist: &str) -> bool {
+    self.imported_modlists
+      .iter()
+      .any(|modlist_name| modlist_name == modlist)
   }
 
   pub fn is_valid(&self) -> bool {
