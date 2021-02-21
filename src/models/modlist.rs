@@ -532,15 +532,15 @@ impl ModList {
     options.overwrite = true;
     options.content_only = true;
 
-    let mergedfiles_scripts_path = self.backedup_mergedfiles_path()
-      .join("content")
-      .join("scripts");
+    let mergedfiles_path = self.backedup_mergedfiles_path();
+      // .join("content")
+      // .join("scripts");
 
     fs_extra::dir::copy(
-      mergedfiles_scripts_path,
-      self.pack_path()
-            .join("content")
-            .join("scripts"),
+      mergedfiles_path,
+      self.pack_path(),
+            // .join("content")
+            // .join("scripts"),
       &options
     ).map_err(|_| std::io::ErrorKind::NotFound)?;
 
