@@ -10,4 +10,8 @@ pub const MODLIST_CONFIG_NAME: &str = "modlist.toml";
 
 pub const MODLIST_MERGEINVENTORY_PATH: &str = "MergeInventory.xml";
 
+pub const MODLIST_MERGEDBUNDLES_PATH: &str = "mergedbundles";
+
 pub const SCRIPTMERGER_MERGEDFILES_FOLDERNAME: &str = "mod0000_MergedFiles";
+
+pub const SCRIPTMERGER_MERGEDBUNDLES_PATH: &str = "Merged Bundle Content";

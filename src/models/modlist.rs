@@ -246,6 +246,11 @@ impl ModList {
       .join(format!("mod0001_{}", self.name.replace(".", "_")))
   }
 
+  pub fn mergedbundles_path(&self) -> PathBuf {
+    self.path()
+      .join(constants::MODLIST_MERGEDBUNDLES_PATH)
+  }
+
   pub fn mergedfiles_path(&self) -> PathBuf {
     self.mods_path()
       .join(constants::SCRIPTMERGER_MERGEDFILES_FOLDERNAME)
@@ -310,6 +315,8 @@ impl ModList {
   }
 
   pub fn install(&self) -> std::io::Result<()> {
+    self.create_required_files();
+
     let witcher_root = std::env::current_dir().unwrap()
       .join(constants::WITCHER_GAME_ROOT);
     
@@ -390,13 +397,52 @@ impl ModList {
 
       if let Err(error) = remove_symlink(&scriptmerger_mergeinventory_path) {
         // let it fail on purpose, just add a log for debugging
-        println!("could not remove scriptmerger mergeinventory: {}", error)
+        println!("could not remove scriptmerger mergeinventory: {}", error);
       }
 
       make_symlink(&scriptmerger_mergeinventory_path, &modlist_mergeinventory_path)?;
     }
+
+    let modlist_mergedbundles_path = self.mergedbundles_path();
+
+    if scriptmerger_path.exists() && modlist_mergedbundles_path.exists() {
+      let scriptmerger_mergedbundles_path = scriptmerger_path.join(constants::SCRIPTMERGER_MERGEDBUNDLES_PATH);
+
+      if let Err(error) = remove_symlink(&scriptmerger_mergedbundles_path) {
+        // let it fail on purpose, just add a log for debugging
+        println!("could not remove scriptmerger mergedbundles: {}", error);
+
+        // but try to remove the folder if it already exists too
+        if let Err(error) = fs::remove_dir_all(&scriptmerger_mergedbundles_path) {
+          println!("could not remove scriptmerger mergedbundles: {}", error);
+        }
+      }
+
+      make_symlink(&scriptmerger_mergedbundles_path, &modlist_mergedbundles_path)?;
+    }
     
     Ok(())
+  }
+
+  // allow it because we don't care if the function fails
+  #[allow(unused_must_use)]
+  pub fn create_required_files(&self) {
+    fs::create_dir_all(self.dlcs_path());
+    fs::create_dir_all(self.mods_path());
+    fs::create_dir_all(self.menus_path());
+    fs::create_dir_all(self.saves_path());
+    fs::create_dir_all(self.content_path());
+    fs::create_dir_all(self.bundles_path());
+    fs::create_dir_all(self.mergedbundles_path());
+
+    let mergeinventory_content = "
+      <?xml version=\"1.0\" encoding=\"utf-8\"?>
+      <MergeInventory xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">
+        
+      </MergeInventory>
+    ".trim();
+
+    fs::write(self.mergeinventory_path(), &mergeinventory_content);
   }
 
   pub fn is_packed(&self) -> bool {
@@ -598,21 +644,7 @@ impl ModList {
 
     let modlist = ModList::new(name.to_owned());
 
-    fs::create_dir_all(modlist.dlcs_path())?;
-    fs::create_dir_all(modlist.mods_path())?;
-    fs::create_dir_all(modlist.menus_path())?;
-    fs::create_dir_all(modlist.saves_path())?;
-    fs::create_dir_all(modlist.content_path())?;
-    fs::create_dir_all(modlist.bundles_path())?;
-
-    let mergeinventory_content = "
-      <?xml version=\"1.0\" encoding=\"utf-8\"?>
-      <MergeInventory xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">
-        
-      </MergeInventory>
-    ".trim();
-
-    fs::write(modlist.mergeinventory_path(), &mergeinventory_content)?;
+    modlist.create_required_files();
 
     Ok(modlist)
   }
