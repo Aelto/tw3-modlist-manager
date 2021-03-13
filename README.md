@@ -15,6 +15,9 @@ On first launch the option to `initialize` is available. This option moves the n
 >
 > you will see later, but the vanilla modlist is important as it's a requirement for all other modlists. It contains the base game DLCs and scripts
 
+Here is a diagram showing the full workflow of the tool, how you can create modlists, import them and even pack them. (courtesy of Dr Nick)
+![general workflow diagram](docs/general_diagram.jpg)
+
 ## Creating a modlist
 Once the you've initialized the modlist manager, you can now create a new modlist with the text input and the `new` button. A modlist is just a directory with 6 folders, if any of these six folders is missing the manager won't consider the modlist as valid and won't display it in the interface.
 
