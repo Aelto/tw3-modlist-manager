@@ -1,6 +1,8 @@
 use std::fs;
 use std::path::PathBuf;
 
+use fs::read_link;
+
 /// loops through all children in the `source` directory and creates a smylink for
 /// every child in the `destination` directory.
 pub fn symlink_children(source: PathBuf, destination: PathBuf) -> std::io::Result<()> {
@@ -59,18 +61,45 @@ pub fn make_symlink(from: &PathBuf, to: &PathBuf) -> std::io::Result<()> {
 }
 
 pub fn remove_symlink(path: &PathBuf) -> std::io::Result<()> {
-  let symlink_path = fs::read_link(&path)?;
+  use std::io::{Error, ErrorKind};
 
-  if symlink_path.exists() {
-    println!("removing symlink");
+  path.symlink_metadata()
+  // here we return if it's a symlink. The then_some transforms the boolean into
+  // an Option, and if it's None then it will skip the following and_then calls
+  
+  .and_then(|metadata| metadata
+    .file_type()
+    .is_symlink()
+    .then_some(0)
+    .ok_or(Error::new(ErrorKind::InvalidInput, "Input is not a symlink"))
+  )
 
-    if symlink_path.is_dir() {
-      fs::remove_dir(path)?;
+  .and_then(|_| fs::read_link(&path))
+  .and_then(|link|
+    match link.is_dir() {
+      
+      // It's a symlink and a directory
+      true => {
+
+        
+        fs::remove_dir(path)
+      },
+      // It's a symlink and a file
+      false => {
+        println!("removing symlink {:?}", &path);
+
+        // because on windows, if the symlink target doesn't exist anymore
+        // it is neither a file nor a directory!
+        if !link.is_file() {
+          fs::remove_file(path)
+          .or_else(|_| fs::remove_dir(path))
+        }
+        else {
+          fs::remove_file(path)
+        }
+
+        
+      }
     }
-    else {
-      fs::remove_file(path)?;
-    }
-  }
-
-  Ok(())
+  )
 }

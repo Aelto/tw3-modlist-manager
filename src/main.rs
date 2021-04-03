@@ -1,8 +1,9 @@
 #![feature(proc_macro_hygiene)]
+#![feature(bool_to_option)]
 
 // uncomment the line below when building a release.
 // It allows the binary to start in background without a cli window.
-#![windows_subsystem = "windows"]
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 extern crate chrono;
 
