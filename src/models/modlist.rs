@@ -197,7 +197,8 @@ impl ModList {
 
   pub fn path(&self) -> PathBuf {
     std::env::current_dir().unwrap()
-      // .join(constants::MODLIST_DATABASE_PATH)
+      // the line below was commented and i don't know why?
+      .join(constants::MODLIST_DATABASE_PATH)
       .join(&self.name)
   }
 
@@ -243,7 +244,7 @@ impl ModList {
 
   pub fn pack_path(&self) -> PathBuf {
     self.mods_path()
-      .join(format!("mod0001_{}", self.name.replace(".", "_")))
+      .join(self.packed_folder_name())
   }
 
   pub fn mergedbundles_path(&self) -> PathBuf {
@@ -445,6 +446,10 @@ impl ModList {
     fs::write(self.mergeinventory_path(), &mergeinventory_content);
   }
 
+  pub fn packed_folder_name(&self) -> String {
+    format!("mod0001_{}", self.name.replace(".", "_"))
+  }
+  
   pub fn is_packed(&self) -> bool {
     return self.pack_path().is_dir();
   }
@@ -618,7 +623,7 @@ impl ModList {
       .map(|filename| filename.into_string())
       .filter(|result| result.is_ok())
       .map(|result| result.unwrap());
-
+      
     directories
     .map(|directory| ModList::new(directory))
     .filter(|modlist| modlist.is_valid())

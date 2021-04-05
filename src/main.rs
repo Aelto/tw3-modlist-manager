@@ -35,6 +35,8 @@ async fn main() -> std::io::Result<()> {
     .output()?;
 
   // open a new browser tab
+
+  #[cfg(not(debug_assertions))]
   std::process::Command::new("cmd")
       .arg("/C")
       .arg("start")
@@ -48,6 +50,7 @@ async fn main() -> std::io::Result<()> {
     // home page
     .service(web::resource("/").route(web::get().to(pages::root::render)))
     .service(web::resource("/modlist/{modlist_name}").route(web::get().to(pages::modlist::render)))
+    .service(web::resource("/modlist/{modlist_name}/edit/{folder_type}/{folder_name}").route(web::get().to(pages::modlist_folder_edit::render)))
 
     // static files
     .service(fs::Files::new("/static", "./static"))
@@ -73,6 +76,9 @@ async fn main() -> std::io::Result<()> {
         .route("/modlist/merge", web::post().to(api::modlist::merge_modlist))
         .route("/modlist/pack", web::post().to(api::modlist::pack_modlist))
         .route("/modlist/unpack", web::post().to(api::modlist::unpack_modlist))
+        .route("/modlist/folder-rename", web::post().to(api::modlist::rename_modlist_folder))
+        .route("/modlist/folder-move", web::post().to(api::modlist::move_modlist_folder))
+        .route("/modlist/folder-delete", web::post().to(api::modlist::delete_modlist_folder))
     )
 
   })

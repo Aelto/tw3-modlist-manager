@@ -23,23 +23,29 @@ pub fn header(page_title: &str) -> Markup {
 fn master_css_content() -> String {
   "
   html, body {
-    display: flex;
-    flex-direction: column;
+    /*font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;*/
+    font-family: Bahnschrift;
+    color: white;
     background: #171413;
-    justify-content: center;
-    align-items: center;
     min-height: 100vh;
   
     padding: 0;
     margin: 0;
+    font-size: 120%;
   }
   
   :root {
     --var-color-accent: #a78445;
   }
-  
+
   .menu {
-    padding: 1em
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  
+  .menu, #content {
+    padding: .5em
   }
   
   .menu a {
@@ -49,9 +55,18 @@ fn master_css_content() -> String {
     font-weight: bold;
   }
   
-  a {
+  a, .accent {
     color: var(--var-color-accent);
     text-decoration: none;
+  }
+
+  input, select {
+    background: #2a2731;
+    border-radius: 3px;
+    border: solid 1px rgb(167 132 69 / 13%);
+    padding: 4px;
+    color: whitesmoke;
+    font-family: Bahnschrift;
   }
 
   input[type='submit'] {
@@ -68,18 +83,6 @@ fn master_css_content() -> String {
     color: white;
   }
   
-  #content {
-    max-width: 450px;
-    background: #12100f;
-    color: white;
-  
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    padding: 1em;
-    border-radius: 2px;
-    box-shadow: 0px 6px 24px 12px rgb(8 7 7);
-    border-top: solid 6px var(--var-color-accent);
-  }
-  
   .row {
     display: flex;
     flex-direction: row;
@@ -91,6 +94,7 @@ fn master_css_content() -> String {
 
   .center {
     text-align: center;
+    justify-content: center;
   }
   
   h1 {
@@ -108,12 +112,7 @@ fn master_css_content() -> String {
   }
   
   
-  ul li {
-    display: flex;
-    flex-direction: row;
-    align-items: baseline;
-    justify-content: space-between;
-  }
+  
   
   li input {
     margin-left: 1em;
@@ -131,12 +130,19 @@ fn master_css_content() -> String {
     cursor: pointer;
   }
 
-  .text-style:disabled {
+  .text-style:disabled, .disabled {
     text-decoration: line-through;
   }
 
   .small {
     font-size: 0.6em;
+  }
+  .tad-smaller {
+    font-size: 0.7em;
+  }
+
+  .big {
+    font-size: 1.6em;
   }
 
   .flex-end {
@@ -145,6 +151,35 @@ fn master_css_content() -> String {
 
   .flex-center {
     justify-content: center;
+  }
+
+  .disabled-folder {
+    font-style: italic;
+    opacity: 0.5;
+  }
+
+  .hidden {
+    display: none;
+  }
+
+  .folder-display {
+  }
+
+  .folder-display + a {
+    transition: 0.25s all;
+    
+    transform: translate(-5px, 0);
+    opacity: 0;
+    padding-left: .2em;
+    padding-right: .6em;
+  }
+
+  .folder-display:hover + a,
+  .folder-display + a:hover {
+    
+    padding-left: .6em;
+    padding-right: .2em;
+    opacity: 1;
   }
   ".to_owned()
 }

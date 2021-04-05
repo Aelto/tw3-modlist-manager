@@ -1,7 +1,10 @@
+use std::path::PathBuf;
+
 use crate::components;
 use crate::models::modlist::ModList;
+use crate::utils::symlinks::get_children_without_symlinks;
 
-use maud::html;
+use maud::{Markup, html};
 use actix_web::web::HttpRequest;
 use actix_web::{HttpResponse};
 
@@ -38,7 +41,7 @@ pub async fn render(req: HttpRequest) -> HttpResponse {
     .body(view.into_string())
   }
 
-  let all_modlists = ModList::get_all();
+  let mut all_modlists = ModList::get_all();
   let all_modlists = all_modlists
     .iter()
     .filter(|ml| modlist.name != ml.name);
@@ -116,65 +119,13 @@ In this case, import vanilla, load the imports then merge. And after you've merg
 unload the import and remove vanilla and you can safely pack your modlist.
   ";
 
-  let mods = modlist.get_children(modlist.mods_path()).join("\n");
-  let dlcs = modlist.get_children(modlist.dlcs_path()).join("\n");
-  let menus = modlist.get_children(modlist.menus_path()).join("\n");
-
-  let open_mods_help = format!("mods in the modlist:\n{}", mods);
-  let open_dlcs_help = format!("dlcs in the modlist:\n{}", dlcs);
-  let open_menus_help = format!("menus in the modlist:\n{}", menus);
-
   let content = html! {
     section {
       h1 {
         (modlist.name)
       }
 
-      div class="row flex-center" {
-        form method="post" action="/api/modlist/visibility-down" {
-          input type="hidden" name="modlist_name" value=(modlist.name);
-          input type="hidden" name="imported_modlist_name" value="-1";
-
-          input type="submit" class="text-style" value="<";
-        }
-
-        span title=(visibility_level_help) {(modlist.visibility)};
-
-        form method="post" action="/api/modlist/visibility-up" {
-          input type="hidden" name="modlist_name" value=(modlist.name);
-          input type="hidden" name="imported_modlist_name" value="1";
-
-          input type="submit" class="text-style" value=">";
-        }
-      }
-
-      div class="row even" {
-        form method="post" action="/api/modlist/view" {
-          input type="hidden" name="modlist_name" value=(modlist.name);
-          input type="hidden" name="folder_name" value=".";
-          input type="submit" value="open" class="text-style";
-        }
-
-        form method="post" action="/api/modlist/view" {
-          input type="hidden" name="modlist_name" value=(modlist.name);
-          input type="hidden" name="folder_name" value="mods";
-          input type="submit" value="mods" class="text-style" title=(open_mods_help);
-        }
-
-        form method="post" action="/api/modlist/view" {
-          input type="hidden" name="modlist_name" value=(modlist.name);
-          input type="hidden" name="folder_name" value="dlcs";
-          input type="submit" value="dlcs" class="text-style" title=(open_dlcs_help);
-        }
-
-        form method="post" action="/api/modlist/view" {
-          input type="hidden" name="modlist_name" value=(modlist.name);
-          input type="hidden" name="folder_name" value="menus";
-          input type="submit" value="menus" class="text-style" title=(open_menus_help);
-        }
-      }
-
-      div class="row even imports" {
+      div class="row center imports" {
         @if !modlist.is_packed() {
           form method="post" action="/api/modlist/merge" {
             input type="hidden" name="modlist_name" value=(modlist.name);
@@ -201,21 +152,59 @@ unload the import and remove vanilla and you can safely pack your modlist.
         }
       }
 
-      section class="imports" {
-        // h2 { "imported modlists" }
+      div class="row flex-center" {
+        form method="post" action="/api/modlist/visibility-down" {
+          input type="hidden" name="modlist_name" value=(modlist.name);
+          input type="hidden" name="imported_modlist_name" value="-1";
 
-        div class="row even" {
-          form method="post" action="/api/modlist/load-imports" {
-            input type="hidden" name="modlist_name" value=(modlist.name);
-            input type="submit" value="load imports";
-          }
-  
-          form method="post" action="/api/modlist/unload-imports" {
-            input type="hidden" name="modlist_name" value=(modlist.name);
-            input type="submit" value="unload imports";
-          }
+          input type="submit" class="text-style" value="<";
         }
 
+        span title=(visibility_level_help) {(modlist.visibility)};
+
+        form method="post" action="/api/modlist/visibility-up" {
+          input type="hidden" name="modlist_name" value=(modlist.name);
+          input type="hidden" name="imported_modlist_name" value="1";
+
+          input type="submit" class="text-style" value=">";
+        }
+      }
+
+      div class="folder-list-container" {
+
+        div class="column tad-smaller" {
+          form method="post" action="/api/modlist/view" {
+            input type="hidden" name="modlist_name" value=(modlist.name);
+            input type="hidden" name="folder_name" value="mods";
+            input type="submit" value="Installed mods" class="text-style big";
+          }
+
+          (get_modlist_folders_view(&modlist, &FolderViewType::Mods, true))
+        }
+
+        div class="column tad-smaller" {
+          form method="post" action="/api/modlist/view" {
+            input type="hidden" name="modlist_name" value=(modlist.name);
+            input type="hidden" name="folder_name" value="dlcs";
+            input type="submit" value="Installed DLCs" class="text-style big";
+          }
+
+          (get_modlist_folders_view(&modlist, &FolderViewType::Dlcs, true))
+        }
+
+        div class="column tad-smaller" {
+          form method="post" action="/api/modlist/view" {
+            input type="hidden" name="modlist_name" value=(modlist.name);
+            input type="hidden" name="folder_name" value="menus";
+            input type="submit" value="Installed menus" class="text-style big";
+          }
+
+          (get_modlist_folders_view(&modlist, &FolderViewType::Menus, true))
+        }
+
+      }
+
+      section class="imports" {
         form method="post" action="/api/modlist/import" {
           fieldset {
             legend { "import a modlist" }
@@ -231,6 +220,18 @@ unload the import and remove vanilla and you can safely pack your modlist.
   
               input type="submit" value="import";
             }
+          }
+        }
+
+        div class="row even" {
+          form method="post" action="/api/modlist/load-imports" {
+            input type="hidden" name="modlist_name" value=(modlist.name);
+            input type="submit" value="load imports";
+          }
+  
+          form method="post" action="/api/modlist/unload-imports" {
+            input type="hidden" name="modlist_name" value=(modlist.name);
+            input type="submit" value="unload imports";
           }
         }
 
@@ -267,6 +268,7 @@ unload the import and remove vanilla and you can safely pack your modlist.
       }
 
       style type="text/css" { (get_stylesheet()) }
+      script type="text/javascript" { (maud::PreEscaped(get_javascript())) }
     }
   };
 
@@ -283,8 +285,252 @@ fn get_stylesheet() -> String {
       margin-bottom: 0;
     }
 
+
+    .folder-list-container {
+      display: flex;
+      justify-content: space-evenly;
+    }
+    .folder-list-container .column + .column {
+      margin-left: 2em;
+    }
+
+    .folder-list-container .column .folder-list {
+      list-style: none;
+    }
+
+    .folder-list-container .column h3, .folder-list-container ul {
+      margin: 0;
+      padding: 0;
+    }
+
+    .folder-list-container .column .folder-listing {
+      padding-left: 1em;
+      margin-left: 5px;
+      border-left: solid 1px white;
+      list-style: none;
+    }
+
+    .folder-list-container .folder-listing, .folder-list-container .folder-list {
+      position: relative;
+    }
+
+    .folder-list-container .folder-listing:not(.do-not-hide-bar):before {
+      content: '';
+      position: absolute;
+      border-bottom: solid 1px white;
+      width: 13px;
+      top: 50%;
+      left: 0;
+    }
+
+    /*
+    small hack to hide the center horizontal bar
+    */
+    .folder-listing .folder-list::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      width: 13px;
+      background: #171413;
+      left: -49.5px;
+      height: 100%;
+    }
+
+    .folder-listing h3 {
+      position: relative;
+    }
+    .folder-listing h3::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      width: 15px;
+      background: white;
+      left: -50px;
+      height: 1px;
+    }
+    
+
+    .folder-listing:last-child .folder-list::before {
+      left: -43px;
+      width: 16px;
+      top: 12px;
+      height: calc(100% + 9px);
+    }
+
+    .folder-listing:last-child::after {
+      content: '';
+      background: #171413;
+      width: 5px;
+      height: 50%;
+      position: absolute;
+      top: calc(50% + 1px);
+      left: -1px;
+    }
+
+    .toggle-modlist-folder-button {
+      display: flex;
+      align-items: baseline;
+      background: #171413;
+      z-index: 1;
+      padding: 0 .5em;
+      cursor: pointer;
+    }
+
     section.imports {
+      margin: auto;
       margin-top: 3em;
+      max-width: 350px;
+    }
+    section.imports ul {
+      list-style: none;
+    }
+    section.imports ul li {
+      display: flex;
+      justify-content: space-between;
     }
   ".to_owned()
+}
+
+enum FolderViewType {
+  Mods,
+  Dlcs,
+  Menus
+}
+
+fn get_folder_from_view_type(modlist: &ModList, view_type: &FolderViewType) -> PathBuf {
+  match view_type {
+    FolderViewType::Mods => modlist.mods_path(),
+    FolderViewType::Dlcs => modlist.dlcs_path(),
+    FolderViewType::Menus => modlist.menus_path(),
+  }
+}
+
+fn get_modlist_folders_view(modlist: &ModList, view_type: &FolderViewType, is_top_level: bool) -> maud::Markup {
+  let is_modlist_packed = modlist.is_packed();
+
+  // when a modlist is packed it doesn't show all the mods but only the pack folder
+  if !is_top_level {
+    match (&view_type, is_modlist_packed) {
+      (FolderViewType::Mods, true) => {
+        return html! {
+          ul class="folder-list" {
+            li {
+              h3.packed-folder { (components::modlist_link(&modlist.name)) span.small{" packed"} }
+      
+              ul class={"folder-list " (if !is_top_level {"hidden"} else {""})} {
+                li.folder-listing {
+                  (&modlist.packed_folder_name())
+                }
+              }
+            }
+          }
+        }
+      }
+  
+      _ => {}
+    };
+  }
+
+  let folder_root = get_folder_from_view_type(modlist, &view_type);
+  let children_result = get_children_without_symlinks(&folder_root);
+
+  if let Err(error) = children_result {
+    return html! {
+      li {
+        "An error occured when fetching the modlist " (modlist.name) " folders. ERROR:" (error)
+      }
+    }
+  }
+
+  let children = children_result.unwrap();
+
+  let mut imported_mods = Vec::new();
+  for import in &modlist.imported_modlists {
+    let some_modlist = ModList::get_by_name(import);
+
+    if some_modlist.is_none() {
+      continue;
+    }
+
+    let mut imported_modlist = some_modlist.unwrap();
+    if let Err(error) = imported_modlist.read_metadata_from_disk() {
+      let error_html = html! {
+        ul class="folder-list" {
+          li class="folder-listing" {
+            h3 { (&imported_modlist.name) }
+
+            ul class="folder-list" {
+              li class="folder-listing" { "Could not load the metadata from the modlist" (components::modlist_link(&imported_modlist.name)) }
+              li class="folder-listing" { "ERROR: " (&error) }
+            }
+          }
+        }
+      };
+
+      imported_mods.push((imported_modlist, error_html));
+      
+      continue;
+    }
+
+    imported_mods.push((ModList::get_by_name(&imported_modlist.name).unwrap(), get_modlist_folders_view(&imported_modlist, view_type, false)));
+  }
+
+
+  html! {
+    ul class="folder-list" {
+      li {
+        h3 {
+          (components::modlist_link(&modlist.name))
+        }
+
+        ul class={"folder-list " (if !is_top_level {"hidden"} else {""})} {
+          @match view_type {
+            FolderViewType::Mods => {
+              @for child in children {
+                li class="folder-listing" { (components::mod_display(&child, &modlist.name, is_modlist_packed)) }
+              }
+            },
+
+            FolderViewType::Dlcs => {
+              @for child in children {
+                li class="folder-listing" { (components::dlc_display(&child, &modlist.name)) }
+              }
+            }
+
+            FolderViewType::Menus => {
+              @for child in children {
+                li class="folder-listing" { (components::menu_display(&child, &modlist.name)) }
+              }
+            }
+          }
+          
+      
+          @for (_imported_modlist, imported_html) in imported_mods {
+            li class={"folder-listing row do-not-hide-bar" } {
+              span.toggle-modlist-folder-button { "[+]" }
+              (imported_html)
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+fn get_javascript() -> String {
+  "
+  window.addEventListener('click', e => {
+    console.log(e);
+    if (e.target.matches('.folder-list .toggle-modlist-folder-button')) {
+      const folder_list = e.target.nextElementSibling.querySelector('.folder-list');
+  
+      e.target.parentElement.classList.toggle('do-not-hide-bar');
+      folder_list.classList.toggle('hidden');
+      e.target.textContent = e.target.textContent
+        .replace('-', '$')
+        .replace('+', '-')
+        .replace('$', '+');
+    }
+  });
+  ".to_string()
 }

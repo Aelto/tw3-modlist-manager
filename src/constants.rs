@@ -1,8 +1,17 @@
+#[cfg(not(debug_assertions))]
 pub const MODLIST_DATABASE_PATH: &str = ".";
+#[cfg(debug_assertions)]
+pub const MODLIST_DATABASE_PATH: &str = "D:\\programs\\steam\\steamapps\\common\\The Witcher 3\\modlists";
 
+#[cfg(not(debug_assertions))]
 pub const WITCHER_GAME_ROOT: &str = "..\\";
+#[cfg(debug_assertions)]
+pub const WITCHER_GAME_ROOT: &str = "D:\\programs\\steam\\steamapps\\common\\The Witcher 3";
 
+#[cfg(not(debug_assertions))]
 pub const SCRIPTMERGER_PATH: &str = "..\\scriptmerger";
+#[cfg(debug_assertions)]
+pub const SCRIPTMERGER_PATH: &str = "D:\\programs\\steam\\steamapps\\common\\The Witcher 3\\scriptmerger";
 
 pub const SCRIPTMERGER_EXE_NAME: &str = "WitcherScriptMerger.exe";
 

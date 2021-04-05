@@ -3,7 +3,19 @@ use maud::{html, Markup};
 pub fn menu(page_title: &str) -> Markup {
   html! {
     div.menu {
-      (menu_link(&html! { "modlist manager" }, "/", page_title, "root"))
+      (menu_link(&html! {
+        "modlist"
+        br;
+        "manager"
+      }, "/", page_title, "root"))
+
+      form method="post" action="/api/program/exit" onsubmit="setTimeout(() => window.close(), 1000)" {
+        input type="submit" class="text-style" value="exit" style="
+          position: absolute;
+          top: 10px;
+          right: 10px;
+        ";
+      }
     }
   }
 }

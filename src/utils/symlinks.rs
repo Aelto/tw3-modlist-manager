@@ -1,8 +1,6 @@
 use std::fs;
 use std::path::PathBuf;
 
-use fs::read_link;
-
 /// loops through all children in the `source` directory and creates a smylink for
 /// every child in the `destination` directory.
 pub fn symlink_children(source: PathBuf, destination: PathBuf) -> std::io::Result<()> {
@@ -102,4 +100,30 @@ pub fn remove_symlink(path: &PathBuf) -> std::io::Result<()> {
       }
     }
   )
+}
+
+pub fn get_children_without_symlinks(directory: &PathBuf) -> std::io::Result<Vec<String>> {
+  let children = fs::read_dir(&directory)?;
+  let mut output = Vec::new();
+
+  for child_res in children {
+    if let Ok(child) = child_res {
+      if let Ok(metadata) = child.path().symlink_metadata() {
+        if metadata.file_type().is_symlink() {
+          continue;
+        }
+
+        let filename = child.path()
+          .file_name()
+          .and_then(|filename| filename.to_str())
+          .map(|str| str.to_owned());
+
+        if let Some(str) = filename {
+          output.push(str);
+        }
+      }
+    }
+  }
+
+  Ok(output)
 }
