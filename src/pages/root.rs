@@ -144,7 +144,7 @@ pub async fn render(req: HttpRequest) -> HttpResponse {
           div class="column" {
             form class="create" method="post" action="/api/modlist/create" {
               h2 { "New modlist" }
-              input type="text" name="modlist_name";
+              input type="text" name="modlist_name" placeholder="modlist's name";
               input type="submit" value="new";
             }
           }

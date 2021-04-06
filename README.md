@@ -1,6 +1,15 @@
 # witcher-3-modlist-manager
 Small utility to manage different mod lists for the game The Witcher 3 
 
+# Images
+![home page](docs/visual-3.png)
+_home page_
+___
+![modlist page](docs/visual-2.png)
+_a modlist_
+___
+![editing a mod](docs/visual-1.png)
+_editing a mod_
 # Installing
 
 - download the binary from the [releases](https://github.com/Aelto/tw3-modlist-manager/releases)
@@ -54,3 +63,26 @@ So imagine i want to merge all my mods used by the `ghostmode` modlist, which im
 - Then i install the modlist, which places the mergeinventory in the scriptmerger install and also swap the `The Witcher 3/mods` directory (used by scriptmerger)
 - I confirm i didn't inherit from the mergedfiles from another modlist i imported by going in `The Witcher 3/mods`, and if i did, i delete the directory (no risk here, you're just deleting the shortcut and not the actual merge).
 - I open script merger and proceed with the merge.
+
+
+## Packing a modlist
+You may have noticed the modlist manager offers the option to pack modlists. This feature tells the modlist manager to transform
+every mods in the modlist (even those imported) so that the script-merger sees the entire modlist as a single and unique mod.
+
+Here is an example, i created an example modlist that imports two other modlists:
+- `shared.lego` with a bunch of lego mods
+- `shared.amm` with the Appearance Menu Mod and a few textures.
+
+Here is what the script merger sees if i leave the `shared.lego` modlist unpacked:
+![unpacked conflicts](docs/conflicts-unpacked.png)
+
+And now after clicking the `pack` button in the `shared.lego` modlist, here is what the script merger sees:
+![packed conflicts](docs/conflicts-packed.png)
+
+It allowed me to merge the `shared.lego` alone so that i won't have to re-merge the mods every time i import the modlist. Now the script merger sees it as a single mod named `mod001_shared_lego` and shows only the new conflicts between the modlists.
+
+If you want to revert the packing process, there is the `unpack` button. It is useful in cases where you want to add a mod to a packed modlist. In such cases:
+- unpack the modlist
+- add the new mod
+- merge the scripts and resolve the conflicts if there are any
+- pack again
