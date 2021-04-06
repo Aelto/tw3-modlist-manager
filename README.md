@@ -2,6 +2,9 @@
 Small utility to manage different mod lists for the game The Witcher 3 
 
 # Images
+**[Youtube link](https://www.youtube.com/watch?v=s4hkZXRD_Vw)**
+___
+
 ![home page](docs/visual-3.png)
 _home page_
 ___
@@ -24,7 +27,7 @@ On first launch the option to `initialize` is available. This option moves the n
 >
 > you will see later, but the vanilla modlist is important as it's a requirement for all other modlists. It contains the base game DLCs and scripts
 
-Here is a diagram showing the full workflow of the tool, how you can create modlists, import them and even pack them. (courtesy of Dr Nick)
+Here is a diagram of the full workflow, it shows how you can create modlists, import them and even pack them. (courtesy of Dr Nick)
 ![general workflow diagram](docs/general_diagram.jpg)
 
 ## Creating a modlist
@@ -42,7 +45,7 @@ You've created yourself a new modlist, but that's not enough. Imagine you added 
 
 For this reason modlist imports were created. Your modlist can import the vanilla modlist to inherit all of its content, the vanilla files. **this is why you must ALWAYS import the vanilla modlist**.
 
-modlist imports occur from top to bottom. And if an imported modlist tries to import a file that already exists in your current modlist, it will ignore it and won't import anything. So you can edit the load order of the imported modlists with the little up/down arrows. **the vanilla modlist should always be last import to avoid erasing your modified files**.
+modlist imports occur from top to bottom. And if an imported modlist tries to import a file that already exists in your current modlist, it will ignore it and won't import anything. So you can edit the load order of the imported modlists with the little up/down arrows. **the vanilla modlist should always be last import to avoid erasing your modified files by priority**.
 
 After your changes to the import list, you can choose to unload or load all imports. When you load imports it creates a series of symlinks linking to the files from the different modlists you imported. Be careful, as these files are not copies but instead shortcuts to the real files in the other modlists. If you edit them, the original files will be edited too and it may break the imported modlist.
 
