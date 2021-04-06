@@ -1,7 +1,7 @@
 use maud::{html, Markup};
 
 pub fn dlc_display(name: &str, modlist_name: &str) -> Markup {
-  let mark_as_disabled = !name.starts_with("dlc");
+  let mark_as_disabled = name.starts_with("~");
 
   html! {
     @if mark_as_disabled {

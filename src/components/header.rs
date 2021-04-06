@@ -87,6 +87,10 @@ fn master_css_content() -> String {
     display: flex;
     flex-direction: row;
   }
+
+  .baseline {
+    align-items: baseline;
+  }
   
   .row.even {
     justify-content: space-evenly;

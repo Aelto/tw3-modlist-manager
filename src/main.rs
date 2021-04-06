@@ -51,6 +51,7 @@ async fn main() -> std::io::Result<()> {
     .service(web::resource("/").route(web::get().to(pages::root::render)))
     .service(web::resource("/modlist/{modlist_name}").route(web::get().to(pages::modlist::render)))
     .service(web::resource("/modlist/{modlist_name}/edit/{folder_type}/{folder_name}").route(web::get().to(pages::modlist_folder_edit::render)))
+    .service(web::resource("/modlist/{modlist_name}/edit").route(web::get().to(pages::modlist_edit::render)))
 
     // static files
     .service(fs::Files::new("/static", "./static"))
@@ -79,6 +80,8 @@ async fn main() -> std::io::Result<()> {
         .route("/modlist/folder-rename", web::post().to(api::modlist::rename_modlist_folder))
         .route("/modlist/folder-move", web::post().to(api::modlist::move_modlist_folder))
         .route("/modlist/folder-delete", web::post().to(api::modlist::delete_modlist_folder))
+        .route("/modlist/rename", web::post().to(api::modlist::rename_modlist))
+        .route("/modlist/delete", web::post().to(api::modlist::delete_modlist))
     )
 
   })

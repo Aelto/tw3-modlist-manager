@@ -68,9 +68,6 @@ pub async fn render(req: HttpRequest) -> HttpResponse {
   installable_levels.sort();
   installable_levels.reverse();
 
-  // now that we don't need to know if it's Some or None, use a default value
-  let visibility = visibility.unwrap_or(0);
-
   // if there is no vanilla modlist, force a call to initialize
   let should_initialize = ModList::get_by_name("vanilla")
     .is_none();

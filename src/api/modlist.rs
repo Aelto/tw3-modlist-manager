@@ -795,7 +795,7 @@ pub async fn delete_modlist_folder(_req: HttpRequest, form: web::Form<DeleteModl
     .map_err(|err| {
       HttpResponse::InternalServerError()
           .content_type("text/plain")
-          .body(format!("Internal server error: could not move the file. {}", err))
+          .body(format!("Internal server error: could not remove the directory. {}", err))
     })?;
   }
 
@@ -804,7 +804,7 @@ pub async fn delete_modlist_folder(_req: HttpRequest, form: web::Form<DeleteModl
     .map_err(|err| {
       HttpResponse::InternalServerError()
           .content_type("text/plain")
-          .body(format!("Internal server error: could not move the file. {}", err))
+          .body(format!("Internal server error: could not remove the file. {}", err))
     })?;
   }
 
@@ -813,5 +813,100 @@ pub async fn delete_modlist_folder(_req: HttpRequest, form: web::Form<DeleteModl
       .header(http::header::LOCATION, format!("/modlist/{}", form.modlist_name))
       .content_type("text/plain")
       .body("folder deleted")
+  )
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct DeleteModlistBody {
+  pub modlist_name: String,
+  pub modlist_name_confirmation: String
+}
+
+pub async fn delete_modlist(_req: HttpRequest, form: web::Form<DeleteModlistBody>) -> Result<HttpResponse> {
+  // this endpoint requires a confirmation for the folder name. If they it doesn't
+  // match
+  if form.modlist_name != form.modlist_name_confirmation {
+    return Ok(
+      HttpResponse::Found()
+        .header(http::header::LOCATION, format!("/modlist/{}/edit", form.modlist_name))
+        .content_type("text/plain")
+        .body("confirmation does not match")
+    )
+  }
+
+  let modlist = ModList::get_by_name(&form.modlist_name);
+
+  if modlist.is_none() {
+    return Ok(
+      HttpResponse::NotFound()
+        .content_type("text/plain")
+        .body("no such modlist")
+    )
+  }
+
+  let modlist = modlist.unwrap();
+  let origin = modlist.path();
+
+  if origin.is_dir() {
+    fs::remove_dir_all(&origin)
+    .map_err(|err| {
+      HttpResponse::InternalServerError()
+          .content_type("text/plain")
+          .body(format!("Internal server error: could not remove the directory. {}", err))
+    })?;
+  }
+
+  if origin.is_file() {
+    fs::remove_file(&origin)
+    .map_err(|err| {
+      HttpResponse::InternalServerError()
+          .content_type("text/plain")
+          .body(format!("Internal server error: could not remove the file. {}", err))
+    })?;
+  }
+
+  Ok(
+    HttpResponse::Found()
+      .header(http::header::LOCATION, format!("/", ))
+      .content_type("text/plain")
+      .body("modlist deleted")
+  )
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct RenameModlistBody {
+  pub modlist_name: String,
+  pub new_modlist_name: String
+}
+
+pub async fn rename_modlist(_req: HttpRequest, form: web::Form<RenameModlistBody>) -> Result<HttpResponse> {
+  let modlist = ModList::get_by_name(&form.modlist_name);
+
+  if modlist.is_none() {
+    return Ok(
+      HttpResponse::NotFound()
+        .content_type("text/plain")
+        .body("no such modlist")
+    )
+  }
+
+  let modlist = modlist.unwrap();
+  let origin = modlist.path();
+
+  let mut destination = modlist.path();
+  destination.set_file_name(&form.new_modlist_name);
+
+  fs::rename(origin, destination)
+  .map_err(|err| {
+    HttpResponse::InternalServerError()
+        .content_type("text/plain")
+        .body(format!("Internal server error: could not rename the modlist. {}", err))
+  })?;
+
+  Ok(
+    HttpResponse::Found()
+      .header(http::header::LOCATION, format!("/modlist/{}", form.new_modlist_name))
+      .content_type("text/plain")
+      .body("folder rename")
   )
 }

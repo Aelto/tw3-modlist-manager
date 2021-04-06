@@ -4,7 +4,7 @@ use crate::components;
 use crate::models::modlist::ModList;
 use crate::utils::symlinks::get_children_without_symlinks;
 
-use maud::{Markup, html};
+use maud::html;
 use actix_web::web::HttpRequest;
 use actix_web::{HttpResponse};
 
@@ -41,7 +41,7 @@ pub async fn render(req: HttpRequest) -> HttpResponse {
     .body(view.into_string())
   }
 
-  let mut all_modlists = ModList::get_all();
+  let all_modlists = ModList::get_all();
   let all_modlists = all_modlists
     .iter()
     .filter(|ml| modlist.name != ml.name);
@@ -121,8 +121,12 @@ unload the import and remove vanilla and you can safely pack your modlist.
 
   let content = html! {
     section {
-      h1 {
-        (modlist.name)
+      div.row.center.baseline {
+        h1.modlist-name {
+          (modlist.name)
+        }
+        
+        a class="small" href={"/modlist/"(modlist.name)"/edit"} { "edit" }
       }
 
       div class="row center imports" {
@@ -351,7 +355,7 @@ fn get_stylesheet() -> String {
     
 
     .folder-listing:last-child .folder-list::before {
-      left: -43px;
+      left: -51px;
       width: 16px;
       top: 12px;
       height: calc(100% + 9px);
@@ -387,6 +391,23 @@ fn get_stylesheet() -> String {
     section.imports ul li {
       display: flex;
       justify-content: space-between;
+    }
+
+    .modlist-name + a {
+      transition: 0.25s all;
+      
+      transform: translate(-5px, 0);
+      opacity: 0;
+      padding-left: .2em;
+      padding-right: .6em;
+    }
+  
+    .modlist-name:hover + a,
+    .modlist-name + a:hover {
+      
+      padding-left: .6em;
+      padding-right: .2em;
+      opacity: 1;
     }
   ".to_owned()
 }

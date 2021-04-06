@@ -1,10 +1,7 @@
-use std::path::PathBuf;
-
 use crate::components;
 use crate::models::modlist::ModList;
-use crate::utils::symlinks::get_children_without_symlinks;
 
-use maud::{Markup, html};
+use maud::html;
 use actix_web::web::HttpRequest;
 use actix_web::{HttpResponse};
 
@@ -27,7 +24,7 @@ pub async fn render(req: HttpRequest) -> HttpResponse {
     .body(view.into_string())
   }
 
-  let mut modlist = some_modlist.unwrap();
+  let modlist = some_modlist.unwrap();
 
   let folder_type = req
     .match_info()
@@ -148,7 +145,7 @@ fn get_stylesheet() -> String {
       height: 1.5px;
       width: 150px;
       top: 50%;
-      background: currentcolor;
+      background: rgba(250, 250, 250, 0.05);
     }
 
     h2::before {
