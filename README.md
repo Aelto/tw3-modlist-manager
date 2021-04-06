@@ -1,6 +1,16 @@
 # witcher-3-modlist-manager
 Small utility to manage different mod lists for the game The Witcher 3 
 
+# Summary
+ - [Images](#images)
+ - [Installing](#installing)
+ - [Using it](#using-it)
+   - [Creating a modlist](#creating-a-modlist)
+   - [Importing a modlist](#importing-a-modlist)
+   - [Installing a modlist](#installing-a-modlist)
+   - [Merging a modlist](#merging-a-modlist)
+   - [Packing a modlist](#packing-a-modlist)
+
 # Images
 **[Youtube link](https://www.youtube.com/watch?v=s4hkZXRD_Vw)**
 ___
