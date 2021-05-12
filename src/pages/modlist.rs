@@ -135,6 +135,8 @@ unload the import and remove vanilla and you can safely pack your modlist.
             input type="hidden" name="modlist_name" value=(modlist.name);
             input type="submit" value="merge" class="text-style" title=(merge_help);
           }
+
+          input type="submit" value="merge scripts" class="text-style" onclick="start_socket_merging()" title=(merge_help);
         }
 
         @if modlist.is_packed() {
@@ -553,5 +555,63 @@ fn get_javascript() -> String {
         .replace('$', '+');
     }
   });
+
+  function openwebsocket() {
+    let socket = null;
+    try {
+      socket = new WebSocket('ws://localhost:5001', 'rust-websocket');
+    } catch (exception) {
+        console.error(exception);
+    }
+
+    socket.onerror = function(error) {
+        console.error(error);
+    };
+
+    socket.onopen = function(event) {
+        this.onclose = function(event) {};
+
+        this.onmessage = function(event) {
+          show_conflicts(JSON.parse(event.data));
+        };
+
+        this.send('start');
+    };
+  }
+
+  function show_conflicts(conflict_data) {
+    console.log(conflict_data);
+
+    for (const conflict of conflict_data.conflicts) {
+      const with_context = s => `${conflict.context_before}${s}${conflict.context_after}`;
+      const ours = with_context(conflict.ours);
+      const theirs = with_context(conflict.theirs);
+      const original = with_context(conflict.ours);
+
+      console.log(ours);
+      console.log(theirs);
+      console.log(original);
+    }
+  }
+
+  function start_socket_merging() {
+    const modlist_name = location.pathname.split('/').slice(-1)[0];
+
+    fetch('/api/modlist/merge', {
+      method: 'POST',
+      body: `modlist_name=${modlist_name}`,
+      headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      method: 'post',
+    })
+    .then(console.log)
+    .catch(console.log);
+  
+    setTimeout(() => {
+      openwebsocket()
+    }, 1000);
+  }
+  
   ".to_string()
 }

@@ -512,6 +512,104 @@ pub async fn merge_modlist(_req: HttpRequest, form: web::Form<MergeModListBody>)
   )
 }
 
+pub async fn merge_modlist_scripts(_req: HttpRequest, form: web::Form<MergeModListBody>) -> Result<HttpResponse> {
+  let modlist = ModList::get_by_name(&form.modlist_name);
+
+  if modlist.is_none() {
+    return Ok(
+      HttpResponse::NotFound()
+        .content_type("text/plain")
+        .body("no such modlist")
+    )
+  }
+
+  let modlist = modlist.unwrap();
+
+  println!("dsf");
+
+  crate::api::socket_merge::main(modlist.name).await;
+
+  println!("dsf");
+
+
+  Ok(
+    HttpResponse::Found()
+      .header(http::header::LOCATION, format!("/modlist/{}", form.modlist_name))
+      .content_type("text/plain")
+      .body("modlist merged")
+  )
+}
+
+
+/// this version of the merge action uses the tw3-script-merger tool instead of
+/// scriptmerger
+pub async fn merge_modlist_scripts_old(_req: HttpRequest, form: web::Form<MergeModListBody>) -> Result<HttpResponse> {
+  let modlist = ModList::get_by_name(&form.modlist_name);
+
+  if modlist.is_none() {
+    return Ok(
+      HttpResponse::NotFound()
+        .content_type("text/plain")
+        .body("no such modlist")
+    )
+  }
+
+  let modlist = modlist.unwrap();
+
+  let scriptmerger_path = std::env::current_dir()
+    .unwrap()
+    .join(constants::TW3SCRIPTMERGER_PATH);
+
+  let source_path = modlist.content_path();
+  let input_path = modlist.mods_path();
+  let output_path = input_path
+    .join(constants::SCRIPTMERGER_MERGEDFILES_FOLDERNAME)
+    .join("content")
+    .join("scripts");
+
+  use std::process::{Command, Stdio};
+  use std::io::{BufRead, BufReader, Error, ErrorKind};
+
+  let stdout = Command::new(scriptmerger_path)
+    .arg("--clean")
+    .arg("--texteditor")
+    .arg("code")
+    .arg("--source")
+    .arg(&source_path)
+    .arg("--input")
+    .arg(&input_path)
+    .arg("--output")
+    .arg(&output_path)
+    .stdout(Stdio::piped())
+    .spawn()
+    .map_err(|err| {
+      HttpResponse::InternalServerError()
+          .content_type("text/plain")
+          .body(format!("Internal server error: could not run the tw3-script-merger tool. {}", err))
+    })?
+    .stdout
+    .ok_or_else(|| Error::new(ErrorKind::Other, "Could not capture standard output"))
+    .map_err(|err| {
+      HttpResponse::InternalServerError()
+          .content_type("text/plain")
+          .body(format!("Internal server error: an error occured when listening to the tw3-script-merger tool. {}", err))
+    })?;
+
+  let reader = BufReader::new(stdout);
+
+  reader
+      .lines()
+      .filter_map(|line| line.ok())
+      .for_each(|line| println!("{}", line));
+
+  Ok(
+    HttpResponse::Found()
+      .header(http::header::LOCATION, format!("/modlist/{}", form.modlist_name))
+      .content_type("text/plain")
+      .body("modlist merged")
+  )
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct ModlistVisibilityUpBody {
   pub modlist_name: String,
