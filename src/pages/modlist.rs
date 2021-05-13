@@ -176,6 +176,8 @@ unload the import and remove vanilla and you can safely pack your modlist.
         }
       }
 
+      (get_merge_conflict_view())
+
       div class="folder-list-container" {
 
         div class="column tad-smaller" {
@@ -411,6 +413,26 @@ fn get_stylesheet() -> String {
       padding-right: .2em;
       opacity: 1;
     }
+
+    #merge-conflict {
+      max-width: 100vw;
+      margin: 3em 0;
+      font-size: 12px;
+    }
+
+    #merge-conflict .column {
+      overflow-x: scroll;
+      flex-grow: 1;
+    }
+
+    #merge-conflict pre.context-before,
+    #merge-conflict pre.context-after {
+      opacity: 0.1;
+    }
+
+    #merge-conflict pre.content {
+      background: rgba(255, 255, 255, .1);
+    }
   ".to_owned()
 }
 
@@ -540,6 +562,28 @@ fn get_modlist_folders_view(modlist: &ModList, view_type: &FolderViewType, is_to
   }
 }
 
+fn get_merge_conflict_view() -> maud::Markup {
+  html! {
+    div id="merge-conflict" class="row hidden" {
+      div.column.ours {
+        pre class="context-before" {}
+        pre class="content" {}
+        pre class="context-after" {}
+      }
+      div.column.original.hidden {
+        pre class="context-before" {}
+        pre class="content" {}
+        pre class="context-after" {}
+      }
+      div.column.theirs {
+        pre class="context-before" {}
+        pre class="content" {}
+        pre class="context-after" {}
+      }
+    }
+  }
+}
+
 fn get_javascript() -> String {
   "
   window.addEventListener('click', e => {
@@ -572,7 +616,15 @@ fn get_javascript() -> String {
         this.onclose = function(event) {};
 
         this.onmessage = function(event) {
-          show_conflicts(JSON.parse(event.data));
+          const data = JSON.parse(event.data);
+
+          if (!data.file_path && !data.file_name && !data.conflicts) {
+            socket.close();
+
+            return;
+          }
+
+          show_conflicts(data);
         };
 
         this.send('start');
@@ -588,9 +640,20 @@ fn get_javascript() -> String {
       const theirs = with_context(conflict.theirs);
       const original = with_context(conflict.ours);
 
-      console.log(ours);
-      console.log(theirs);
-      console.log(original);
+      const $mergeconflict = document.querySelector('#merge-conflict');
+      $mergeconflict.querySelector('.ours .content').textContent = conflict.ours;
+      $mergeconflict.querySelector('.theirs  .content').textContent = conflict.theirs;
+      $mergeconflict.querySelector('.original  .content').textContent = conflict.original;
+
+      Array.from($mergeconflict.querySelectorAll('.context-before'))
+      .forEach(el => el.textContent = conflict.context_before);
+
+      Array.from($mergeconflict.querySelectorAll('.context-after'))
+      .forEach(el => el.textContent = conflict.context_after);
+
+      // console.log(patienceDiff());
+
+      $mergeconflict.classList.remove('hidden');
     }
   }
 
