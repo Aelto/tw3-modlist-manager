@@ -18,8 +18,10 @@ websocket = "0.26.2"
 maud = { version = "0.21.0", features = ["actix-web"] }
 rusqlite = { version = "0.21.0", features = ["bundled"] }
 serde = "1.0.104"
+serde_json = "1.0"
 futures = "0.3.1"
 chrono = { version = "0.4", features = ["serde"] }
+encoding_rs_io = "0.1.7"
 
 toml = "0.5.8"
 dirs = "3.0.1"

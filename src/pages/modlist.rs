@@ -136,7 +136,9 @@ unload the import and remove vanilla and you can safely pack your modlist.
             input type="submit" value="merge" class="text-style" title=(merge_help);
           }
 
-          input type="submit" value="merge scripts" class="text-style" onclick="start_socket_merging()" title=(merge_help);
+          div {
+            button class="text-style" onclick="start_socket_merging()" title=(merge_help) { "merge scripts" };
+          }
         }
 
         @if modlist.is_packed() {
@@ -414,24 +416,92 @@ fn get_stylesheet() -> String {
       opacity: 1;
     }
 
-    #merge-conflict {
-      max-width: 100vw;
-      margin: 3em 0;
+    .merge-conflict-view {
+      margin: 5em 0;
       font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
     }
 
-    #merge-conflict .column {
-      overflow-x: scroll;
+    .merge-conflict-view .merge-conflict {
+      margin: 4em 0;
+    }
+
+    .merge-conflict > div {
+      display: flex;
+    }
+
+    .merge-conflict .row .left {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 50px;
+      position: relative;
+    }
+
+    .merge-conflict .row .left .modname {
+      position: absolute;
+      left: 0;
+      transform: translate(-100%, 0%);
+    }
+
+    .merge-conflict .row .left button {
+      background: none;
+      outline: none;
+      border: none;
+      cursor: pointer;
+      color: green;
+    }
+
+    .merge-conflict .row pre {
       flex-grow: 1;
+      cursor: default;
     }
 
-    #merge-conflict pre.context-before,
-    #merge-conflict pre.context-after {
-      opacity: 0.1;
+    
+
+    .merge-conflict .row.accepted .reject {
+      display: none;
     }
 
-    #merge-conflict pre.content {
-      background: rgba(255, 255, 255, .1);
+    .merge-conflict .row.rejected .accept {
+      display: none;
+    }
+
+    .merge-conflict .row .left:hover + pre {
+      background: rgba(250, 250, 250, .02);
+    }
+
+    .merge-conflict button {
+      transition: .075s all ease-in-out;
+    }
+    .merge-conflict button:hover {
+      transform: scale(1.25);
+    }
+    .merge-conflict button:active {
+      transform: scale(2);
+    }
+
+    .merge-conflict .row.rejected pre {
+      opacity: .1;
+    }
+
+    pre {
+      margin: 0;
+    }
+
+    .context-before, .context-after {
+      opacity: .1;
+    }
+
+    .ours {
+      color: #8bc34a;
+    }
+
+    .theirs {
+      color: #E91E63;
     }
   ".to_owned()
 }
@@ -564,22 +634,57 @@ fn get_modlist_folders_view(modlist: &ModList, view_type: &FolderViewType, is_to
 
 fn get_merge_conflict_view() -> maud::Markup {
   html! {
-    div id="merge-conflict" class="row hidden" {
-      div.column.ours {
-        pre class="context-before" {}
-        pre class="content" {}
-        pre class="context-after" {}
+    div class="hidden merge-conflict-view" {
+      h2.filename.center {}
+      div.conflict-count.center {}
+
+      div class="merge-conflict hidden" {
+        div class="row context-before" {
+          div class="left" {
+          }
+          pre contenteditable="true" {}
+        }
+
+        div class="row content original rejected" {
+          div class="left" {
+            button.reject { "❌" }
+            button.accept { "✔" }
+
+            div.modname { "original" }
+          }
+          pre contenteditable="true" {}
+        }
+        div class="row content ours accepted" {
+          div class="left" {
+            button.reject { "❌" }
+            button.accept { "✔" }
+
+            div.modname { "mergedfiles" }
+          }
+          pre contenteditable="true" {}
+        }
+        div class="row content theirs accepted" {
+          div class="left" {
+            button.reject { "❌" }
+            button.accept { "✔" }
+
+            div.modname { }
+          }
+          pre contenteditable="true" {}
+        }
+
+        div class="row context-after" {
+          div class="left" {
+          }
+          pre contenteditable="true" {}
+        }
       }
-      div.column.original.hidden {
-        pre class="context-before" {}
-        pre class="content" {}
-        pre class="context-after" {}
+    
+      div.actions.row.hidden {
+        button.resolve.text-style { "resolve" }
+        button.abandon.text-style { "abandon" }
       }
-      div.column.theirs {
-        pre class="context-before" {}
-        pre class="content" {}
-        pre class="context-after" {}
-      }
+
     }
   }
 }
@@ -587,7 +692,6 @@ fn get_merge_conflict_view() -> maud::Markup {
 fn get_javascript() -> String {
   "
   window.addEventListener('click', e => {
-    console.log(e);
     if (e.target.matches('.folder-list .toggle-modlist-folder-button')) {
       const folder_list = e.target.nextElementSibling.querySelector('.folder-list');
   
@@ -618,43 +722,133 @@ fn get_javascript() -> String {
         this.onmessage = function(event) {
           const data = JSON.parse(event.data);
 
-          if (!data.file_path && !data.file_name && !data.conflicts) {
+          if (!data.conflicts.length) {
+            Array.from(document.querySelectorAll('.merge-conflict.custom'))
+            .forEach(node => node.remove());
+
             socket.close();
 
             return;
           }
 
-          show_conflicts(data);
+          show_conflicts(data, socket);
         };
 
-        this.send('start');
+        // this.send('start');
     };
   }
 
-  function show_conflicts(conflict_data) {
+  function show_conflicts(conflict_data, socket) {
     console.log(conflict_data);
 
+    document.querySelector('.merge-conflict-view .actions .resolve').onclick = e => {
+      const conflict_resolvers = Array.from(document.querySelectorAll('.merge-conflict.custom'));
+
+      for (let i = 0; i < conflict_resolvers.length; i += 1) {
+        const $resolver = conflict_resolvers[i];
+
+
+        const $context_before = $resolver.querySelector('.context-before');
+        conflict_data.conflicts[i].context_before = $context_before.querySelector('pre').textContent;
+
+        const $context_after = $resolver.querySelector('.context-after');
+        conflict_data.conflicts[i].context_after = $context_after.querySelector('pre').textContent;
+
+        const $original = $resolver.querySelector('.original');
+        if ($original.classList.contains('accepted') && !$original.classList.contains('rejected')) {
+          conflict_data.conflicts[i].original = $original.querySelector('pre').textContent;
+        }
+        else {
+          conflict_data.conflicts[i].original = '';
+        }
+
+        const $ours = $resolver.querySelector('.ours');
+        if ($ours.classList.contains('accepted') && !$ours.classList.contains('rejected')) {
+          conflict_data.conflicts[i].ours = $ours.querySelector('pre').textContent;
+        }
+        else {
+          conflict_data.conflicts[i].ours = '';
+        }
+
+        const $theirs = $resolver.querySelector('.theirs');
+        if ($theirs.classList.contains('accepted') && !$theirs.classList.contains('rejected')) {
+          conflict_data.conflicts[i].theirs = $theirs.querySelector('pre').textContent;
+        }
+        else {
+          conflict_data.conflicts[i].theirs = '';
+        }
+      }
+
+      const message = JSON.stringify(conflict_data);
+      socket.send(message);
+
+      // remove all the conflicts that were previously shown
+      Array.from(document.querySelectorAll('.merge-conflict.custom'))
+        .forEach(node => node.classList.add('to-recycle'));
+
+      document.querySelector('.actions.row').classList.add('hidden');
+      document.querySelector('.merge-conflict-view .filename').textContent = '';
+      document.querySelector('.merge-conflict-view .conflict-count').textContent = '';
+    };
+
+    document.querySelector('.merge-conflict-view .filename').textContent = conflict_data.file_name;
+    document.querySelector('.merge-conflict-view .conflict-count').textContent = `${conflict_data.conflicts.length} conflicts`;
+
+    document.querySelector('.actions.row').classList.remove('hidden');
+
+    // first we remove all the conflicts that were previously shown
+    Array.from(document.querySelectorAll('.merge-conflict.custom'))
+      .forEach(node => node.classList.add('to-recycle'));
+
+    // this is the base node, we copy it for every conflict we have
+    const $mergeconflict = document.querySelector('.merge-conflict');
+
     for (const conflict of conflict_data.conflicts) {
-      const with_context = s => `${conflict.context_before}${s}${conflict.context_after}`;
-      const ours = with_context(conflict.ours);
-      const theirs = with_context(conflict.theirs);
-      const original = with_context(conflict.ours);
+      // first we check if there is a conflict node to recycle
+      let $custom = document.querySelector('.to-recycle');
 
-      const $mergeconflict = document.querySelector('#merge-conflict');
-      $mergeconflict.querySelector('.ours .content').textContent = conflict.ours;
-      $mergeconflict.querySelector('.theirs  .content').textContent = conflict.theirs;
-      $mergeconflict.querySelector('.original  .content').textContent = conflict.original;
+      const recycled = $custom !== null;
+      if (!recycled) {
+        $custom = $mergeconflict.cloneNode(true);
+        $custom.classList.remove('hidden');
+        $custom.classList.add('custom');
+      }
+      else {
+        $custom.classList.remove('to-recycle');
+      }
 
-      Array.from($mergeconflict.querySelectorAll('.context-before'))
-      .forEach(el => el.textContent = conflict.context_before);
 
-      Array.from($mergeconflict.querySelectorAll('.context-after'))
-      .forEach(el => el.textContent = conflict.context_after);
+      $custom.querySelector('.context-before pre').textContent = conflict.context_before;
+      $custom.querySelector('.context-after pre').textContent = conflict.context_after;
+      $custom.querySelector('.content.original pre').textContent = conflict.original;
+      $custom.querySelector('.content.ours pre').textContent = conflict.ours;
+      $custom.querySelector('.content.theirs pre').textContent = conflict.theirs;
 
-      // console.log(patienceDiff());
+      $custom.querySelector('.content.original').classList.remove('accepted');
+      $custom.querySelector('.content.ours').classList.remove('rejected');
+      $custom.querySelector('.content.theirs').classList.remove('rejected');
+      $custom.querySelector('.content.original').classList.add('rejected');
+      $custom.querySelector('.content.ours').classList.add('accepted');
+      $custom.querySelector('.content.theirs').classList.add('accepted');
 
-      $mergeconflict.classList.remove('hidden');
+      $custom.querySelector('.content.theirs .modname').textContent = conflict_data.mod_name;
+
+      if (!recycled) {
+        $custom.addEventListener('click', e => {
+          if (e.target.matches('button')) {
+            const row = e.target.parentElement.parentElement;
+            row.classList.toggle('accepted');
+            row.classList.toggle('rejected');
+          }
+        })
+
+        $mergeconflict.parentElement.appendChild($custom);
+      }
     }
+
+    // first we remove all the conflicts that were previously shown
+    Array.from(document.querySelectorAll('.to-recycle'))
+      .forEach(node => node.remove());
   }
 
   function start_socket_merging() {
@@ -672,8 +866,8 @@ fn get_javascript() -> String {
     .catch(console.log);
   
     setTimeout(() => {
-      openwebsocket()
-    }, 1000);
+      openwebsocket();
+    }, 50);
   }
   
   ".to_string()
