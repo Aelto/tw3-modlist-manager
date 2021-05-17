@@ -52,6 +52,7 @@ async fn main() -> std::io::Result<()> {
     .service(web::resource("/modlist/{modlist_name}").route(web::get().to(pages::modlist::render)))
     .service(web::resource("/modlist/{modlist_name}/edit/{folder_type}/{folder_name}").route(web::get().to(pages::modlist_folder_edit::render)))
     .service(web::resource("/modlist/{modlist_name}/edit").route(web::get().to(pages::modlist_edit::render)))
+    .service(web::resource("/modlist/{modlist_name}/merge").route(web::get().to(pages::modlist_merge::render)))
 
     // static files
     // .service(fs::Files::new("/static", "./static"))
@@ -74,7 +75,8 @@ async fn main() -> std::io::Result<()> {
         .route("/modlist/visibility-up", web::post().to(api::modlist::modlist_visibility_up))
         .route("/modlist/visibility-down", web::post().to(api::modlist::modlist_visibility_down))
         .route("/modlist/view", web::post().to(api::modlist::view_modlist))
-        .route("/modlist/merge", web::post().to(api::modlist::merge_modlist_scripts))
+        .route("/modlist/merge", web::post().to(api::modlist::merge_modlist))
+        .route("/modlist/merge-scripts", web::post().to(api::modlist::merge_modlist_scripts))
         .route("/modlist/pack", web::post().to(api::modlist::pack_modlist))
         .route("/modlist/unpack", web::post().to(api::modlist::unpack_modlist))
         .route("/modlist/folder-rename", web::post().to(api::modlist::rename_modlist_folder))

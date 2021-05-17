@@ -137,7 +137,7 @@ unload the import and remove vanilla and you can safely pack your modlist.
           }
 
           div {
-            button class="text-style" onclick="start_socket_merging()" title=(merge_help) { "merge scripts" };
+            a.small href={"/modlist/"(modlist.name)"/merge"} { "merge scripts" };
           }
         }
 
@@ -177,8 +177,6 @@ unload the import and remove vanilla and you can safely pack your modlist.
           input type="submit" class="text-style" value=">";
         }
       }
-
-      (get_merge_conflict_view())
 
       div class="folder-list-container" {
 
@@ -632,63 +630,6 @@ fn get_modlist_folders_view(modlist: &ModList, view_type: &FolderViewType, is_to
   }
 }
 
-fn get_merge_conflict_view() -> maud::Markup {
-  html! {
-    div class="hidden merge-conflict-view" {
-      h2.filename.center {}
-      div.conflict-count.center {}
-
-      div class="merge-conflict hidden" {
-        div class="row context-before" {
-          div class="left" {
-          }
-          pre contenteditable="true" {}
-        }
-
-        div class="row content original rejected" {
-          div class="left" {
-            button.reject { "❌" }
-            button.accept { "✔" }
-
-            div.modname { "original" }
-          }
-          pre contenteditable="true" {}
-        }
-        div class="row content ours accepted" {
-          div class="left" {
-            button.reject { "❌" }
-            button.accept { "✔" }
-
-            div.modname { "mergedfiles" }
-          }
-          pre contenteditable="true" {}
-        }
-        div class="row content theirs accepted" {
-          div class="left" {
-            button.reject { "❌" }
-            button.accept { "✔" }
-
-            div.modname { }
-          }
-          pre contenteditable="true" {}
-        }
-
-        div class="row context-after" {
-          div class="left" {
-          }
-          pre contenteditable="true" {}
-        }
-      }
-    
-      div.actions.row.hidden {
-        button.resolve.text-style { "resolve" }
-        button.abandon.text-style { "abandon" }
-      }
-
-    }
-  }
-}
-
 fn get_javascript() -> String {
   "
   window.addEventListener('click', e => {
@@ -703,172 +644,5 @@ fn get_javascript() -> String {
         .replace('$', '+');
     }
   });
-
-  function openwebsocket() {
-    let socket = null;
-    try {
-      socket = new WebSocket('ws://localhost:5001', 'rust-websocket');
-    } catch (exception) {
-        console.error(exception);
-    }
-
-    socket.onerror = function(error) {
-        console.error(error);
-    };
-
-    socket.onopen = function(event) {
-        this.onclose = function(event) {};
-
-        this.onmessage = function(event) {
-          const data = JSON.parse(event.data);
-
-          if (!data.conflicts.length) {
-            Array.from(document.querySelectorAll('.merge-conflict.custom'))
-            .forEach(node => node.remove());
-
-            socket.close();
-
-            return;
-          }
-
-          show_conflicts(data, socket);
-        };
-
-        // this.send('start');
-    };
-  }
-
-  function show_conflicts(conflict_data, socket) {
-    console.log(conflict_data);
-
-    document.querySelector('.merge-conflict-view .actions .resolve').onclick = e => {
-      const conflict_resolvers = Array.from(document.querySelectorAll('.merge-conflict.custom'));
-
-      for (let i = 0; i < conflict_resolvers.length; i += 1) {
-        const $resolver = conflict_resolvers[i];
-
-
-        const $context_before = $resolver.querySelector('.context-before');
-        conflict_data.conflicts[i].context_before = $context_before.querySelector('pre').textContent;
-
-        const $context_after = $resolver.querySelector('.context-after');
-        conflict_data.conflicts[i].context_after = $context_after.querySelector('pre').textContent;
-
-        const $original = $resolver.querySelector('.original');
-        if ($original.classList.contains('accepted') && !$original.classList.contains('rejected')) {
-          conflict_data.conflicts[i].original = $original.querySelector('pre').textContent;
-        }
-        else {
-          conflict_data.conflicts[i].original = '';
-        }
-
-        const $ours = $resolver.querySelector('.ours');
-        if ($ours.classList.contains('accepted') && !$ours.classList.contains('rejected')) {
-          conflict_data.conflicts[i].ours = $ours.querySelector('pre').textContent;
-        }
-        else {
-          conflict_data.conflicts[i].ours = '';
-        }
-
-        const $theirs = $resolver.querySelector('.theirs');
-        if ($theirs.classList.contains('accepted') && !$theirs.classList.contains('rejected')) {
-          conflict_data.conflicts[i].theirs = $theirs.querySelector('pre').textContent;
-        }
-        else {
-          conflict_data.conflicts[i].theirs = '';
-        }
-      }
-
-      const message = JSON.stringify(conflict_data);
-      socket.send(message);
-
-      // remove all the conflicts that were previously shown
-      Array.from(document.querySelectorAll('.merge-conflict.custom'))
-        .forEach(node => node.classList.add('to-recycle'));
-
-      document.querySelector('.actions.row').classList.add('hidden');
-      document.querySelector('.merge-conflict-view .filename').textContent = '';
-      document.querySelector('.merge-conflict-view .conflict-count').textContent = '';
-    };
-
-    document.querySelector('.merge-conflict-view .filename').textContent = conflict_data.file_name;
-    document.querySelector('.merge-conflict-view .conflict-count').textContent = `${conflict_data.conflicts.length} conflicts`;
-
-    document.querySelector('.actions.row').classList.remove('hidden');
-
-    // first we remove all the conflicts that were previously shown
-    Array.from(document.querySelectorAll('.merge-conflict.custom'))
-      .forEach(node => node.classList.add('to-recycle'));
-
-    // this is the base node, we copy it for every conflict we have
-    const $mergeconflict = document.querySelector('.merge-conflict');
-
-    for (const conflict of conflict_data.conflicts) {
-      // first we check if there is a conflict node to recycle
-      let $custom = document.querySelector('.to-recycle');
-
-      const recycled = $custom !== null;
-      if (!recycled) {
-        $custom = $mergeconflict.cloneNode(true);
-        $custom.classList.remove('hidden');
-        $custom.classList.add('custom');
-      }
-      else {
-        $custom.classList.remove('to-recycle');
-      }
-
-
-      $custom.querySelector('.context-before pre').textContent = conflict.context_before;
-      $custom.querySelector('.context-after pre').textContent = conflict.context_after;
-      $custom.querySelector('.content.original pre').textContent = conflict.original;
-      $custom.querySelector('.content.ours pre').textContent = conflict.ours;
-      $custom.querySelector('.content.theirs pre').textContent = conflict.theirs;
-
-      $custom.querySelector('.content.original').classList.remove('accepted');
-      $custom.querySelector('.content.ours').classList.remove('rejected');
-      $custom.querySelector('.content.theirs').classList.remove('rejected');
-      $custom.querySelector('.content.original').classList.add('rejected');
-      $custom.querySelector('.content.ours').classList.add('accepted');
-      $custom.querySelector('.content.theirs').classList.add('accepted');
-
-      $custom.querySelector('.content.theirs .modname').textContent = conflict_data.mod_name;
-
-      if (!recycled) {
-        $custom.addEventListener('click', e => {
-          if (e.target.matches('button')) {
-            const row = e.target.parentElement.parentElement;
-            row.classList.toggle('accepted');
-            row.classList.toggle('rejected');
-          }
-        })
-
-        $mergeconflict.parentElement.appendChild($custom);
-      }
-    }
-
-    // first we remove all the conflicts that were previously shown
-    Array.from(document.querySelectorAll('.to-recycle'))
-      .forEach(node => node.remove());
-  }
-
-  function start_socket_merging() {
-    const modlist_name = location.pathname.split('/').slice(-1)[0];
-
-    fetch('/api/modlist/merge', {
-      method: 'POST',
-      body: `modlist_name=${modlist_name}`,
-      headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      method: 'post',
-    })
-    .then(console.log)
-    .catch(console.log);
-  
-    setTimeout(() => {
-      openwebsocket();
-    }, 50);
-  }
-  
   ".to_string()
 }
