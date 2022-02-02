@@ -1,0 +1,21 @@
+name: check-build
+
+on: [push, pull_request]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Build with Cargo
+      run: cargo build --verbose
+    - name: Run tests
+      run: echo "Tests are not yet set up, assume everything works because why not."
+      # Add once testing is configured
+      # run: cargo test --verbose
