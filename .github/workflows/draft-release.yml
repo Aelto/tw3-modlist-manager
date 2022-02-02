@@ -1,6 +1,8 @@
-name: check-build
+name: draft-release
 
-on: [push, pull_request]
+on:
+  push:
+    tags: '*'
 
 env:
   CARGO_TERM_COLOR: always
@@ -25,7 +27,9 @@ jobs:
         use-cross: true
         command: build
         args: --release --taget=x86_64-pc-windows-gnu
-    - name: Run tests
-      run: echo "Tests are not yet set up, assume everything works because why not."
-      # Add once testing is configured
-      # run: cargo test --verbose
+    - name: Create draft release
+      uses: ncipollo/release-action@v1
+      with:
+        artifacts: "target/release/tw3-modlist-manager.exe"
+        draft: true
+        generateReleaseNotes: true
