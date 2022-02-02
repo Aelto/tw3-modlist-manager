@@ -26,7 +26,7 @@ jobs:
       with:
         use-cross: true
         command: build
-        args: --release --taget=x86_64-pc-windows-gnu
+        args: --release --target=x86_64-pc-windows-gnu
     - name: Create draft release
       uses: ncipollo/release-action@v1
       with:
