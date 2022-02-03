@@ -30,6 +30,6 @@ jobs:
     - name: Create draft release
       uses: ncipollo/release-action@v1
       with:
-        artifacts: "target/release/tw3-modlist-manager.exe"
+        artifacts: "target/x86_64-pc-windows-gnu/release/tw3-modlist-manager.exe"
         draft: true
         generateReleaseNotes: true
