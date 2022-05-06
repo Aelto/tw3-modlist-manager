@@ -1,0 +1,35 @@
+name: draft-release
+
+on:
+  push:
+    tags: '*'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Use Rust nightly
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: nightly
+        target: x86_64-pc-windows-gnu
+        override: true
+    - name: Build with Cargo
+      uses: actions-rs/cargo@v1
+      with:
+        use-cross: true
+        command: build
+        args: --release --target=x86_64-pc-windows-gnu
+    - name: Create draft release
+      uses: ncipollo/release-action@v1
+      with:
+        artifacts: "target/x86_64-pc-windows-gnu/release/tw3-modlist-manager.exe"
+        draft: true
+        generateReleaseNotes: true

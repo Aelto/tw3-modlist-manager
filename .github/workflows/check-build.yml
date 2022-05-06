@@ -1,0 +1,35 @@
+name: check-build
+
+on:
+  push:
+    branches: '*'
+  pull_request:
+    branches: '*'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Use Rust nightly
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: nightly
+        target: x86_64-pc-windows-gnu
+        override: true
+    - name: Build with Cargo
+      uses: actions-rs/cargo@v1
+      with:
+        use-cross: true
+        command: build
+        args: --release --target=x86_64-pc-windows-gnu
+    - name: Run tests
+      run: echo "Tests are not yet set up, assume everything works because why not."
+      # Add once testing is configured
+      # run: cargo test --verbose
