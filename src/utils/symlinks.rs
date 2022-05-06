@@ -8,6 +8,11 @@ pub fn symlink_children(source: PathBuf, destination: PathBuf) -> std::io::Resul
 
   for source_child_err in source_children {
     if let Ok(source_child_name) = source_child_err {
+      // skip the children whose names start with ~
+      if source_child_name.file_name().into_string().unwrap_or_else(|_| String::from("~")).starts_with("~") {
+        continue;
+      }
+
       // the path to the child in the other destination directory,
       // where the symlink will link to.
       let child_path = source_child_name.path();

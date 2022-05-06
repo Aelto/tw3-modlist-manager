@@ -487,21 +487,37 @@ pub async fn merge_modlist(_req: HttpRequest, form: web::Form<MergeModListBody>)
     .unwrap()
     .join(constants::SCRIPTMERGER_PATH);
 
-  std::process::Command::new("cmd")
-    .arg("/C")
-    .arg("start")
-    .arg("/D")
-    .arg(scriptmerger_path)
-    .arg(constants::SCRIPTMERGER_EXE_NAME)
-    .output()
-    .map_err(|err| {
-      HttpResponse::InternalServerError()
-          .content_type("text/plain")
-          .body(format!("Internal server error: could not merge modlist. {}.
-          Make sure your scriptmerger is installed in the correct directory,
-          please refer to the written documentation about merging modlists for
-          more information", err))
-    })?;
+  if cfg!(target_os = "windows") {
+    std::process::Command::new("cmd")
+      .arg("/C")
+      .arg("start")
+      .arg("/D")
+      .arg(scriptmerger_path)
+      .arg(constants::SCRIPTMERGER_EXE_NAME)
+      .output()
+      .map_err(|err| {
+        HttpResponse::InternalServerError()
+            .content_type("text/plain")
+            .body(format!("Internal server error: could not merge modlist. {}.
+            Make sure your scriptmerger is installed in the correct directory,
+            please refer to the written documentation about merging modlists for
+            more information", err))
+      })?;
+  }
+  else if cfg!(target_os = "linux") {
+    std::process::Command::new("sh")
+      .arg("-c")
+      .arg(scriptmerger_path.join(constants::SCRIPTMERGER_EXE_NAME))
+      .output()
+      .map_err(|err| {
+        HttpResponse::InternalServerError()
+            .content_type("text/plain")
+            .body(format!("Internal server error: could not merge modlist. {}.
+            Make sure your scriptmerger is installed in the correct directory,
+            please refer to the written documentation about merging modlists for
+            more information", err))
+      })?;
+  }
 
 
   Ok(

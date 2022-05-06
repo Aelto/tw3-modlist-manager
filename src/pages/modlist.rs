@@ -136,9 +136,9 @@ unload the import and remove vanilla and you can safely pack your modlist.
             input type="submit" value="merge" class="text-style" title=(merge_help);
           }
 
-          div {
-            a.small href={"/modlist/"(modlist.name)"/merge"} { "merge scripts" };
-          }
+          // div {
+          //   a.small href={"/modlist/"(modlist.name)"/merge"} { "merge scripts" };
+          // }
         }
 
         @if modlist.is_packed() {

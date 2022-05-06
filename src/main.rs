@@ -24,15 +24,17 @@ async fn main() -> std::io::Result<()> {
     .and_then(|n| n.parse::<u16>().ok())
     .unwrap_or(5000);
 
-  std::process::Command::new("cmd")
-    .arg("/C")
-    .arg("taskkill")
-    .arg("/f")
-    .arg("/im")
-    .arg(get_program_name().expect("cannot get program name"))
-    .arg("/fi")
-    .arg(format!("PID ne {}", std::process::id()))
-    .output()?;
+  if (cfg!(target_os = "windows")) {
+    std::process::Command::new("cmd")
+      .arg("/C")
+      .arg("taskkill")
+      .arg("/f")
+      .arg("/im")
+      .arg(get_program_name().expect("cannot get program name"))
+      .arg("/fi")
+      .arg(format!("PID ne {}", std::process::id()))
+      .output()?;
+  }
 
   // open a new browser tab
 
