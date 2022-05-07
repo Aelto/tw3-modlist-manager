@@ -34,7 +34,7 @@ _editing a mod_
 
 On first launch the option to `initialize` is available. This option moves the necessary vanilla files into a modlist called `vanilla`, so the files will be moved into `The Witcher 3/modlists/vanilla` (in case you want to revert it). Of course, if your current install was a modded game, your vanilla modlist won't be exactly vanilla but your current install.
 
-> I would advise to create yourself a real vanilla install. You will have trouble swapping between modlists because your vanilla modlist won't be a real vanilla install and som DLCs or content scripts will be modified.
+> I would advise to create yourself a real vanilla install. You will have trouble swapping between modlists because your vanilla modlist won't be a real vanilla install and some DLCs or content scripts will be modified.
 >
 > you will see later, but the vanilla modlist is important as it's a requirement for all other modlists. It contains the base game DLCs and scripts
 
@@ -42,7 +42,7 @@ Here is a diagram of the full workflow, it shows how you can create modlists, im
 ![general workflow diagram](docs/general_diagram.jpg)
 
 ## Creating a modlist
-Once the you've initialized the modlist manager, you can now create a new modlist with the text input and the `new` button. A modlist is just a directory with 6 folders, if any of these six folders is missing the manager won't consider the modlist as valid and won't display it in the interface.
+Once you've initialized the modlist manager, you can now create a new modlist with the text input and the `new` button. A modlist is just a directory with 6 folders, if any of these six folders is missing the manager won't consider the modlist as valid and won't display it in the interface.
 
 - the `mods` is where you drop all mods, the same way you did in vanilla
 - the `dlcs` directory is where you drop all DLCs, the same way you did in vanilla
