@@ -1,3 +1,4 @@
+use maud::Render;
 use maud::{html, Markup};
 
 pub fn menu(page_title: &str) -> Markup {
@@ -23,9 +24,9 @@ pub fn menu(page_title: &str) -> Markup {
 fn menu_link(text: &Markup, href: &str, page_title: &str, match_str: &str) -> Markup {
   html! {
     @if page_title == match_str {
-      a class="active" href=(href) { (text) }
+      a class="active" href=(href) { (text.render()) }
     } @else {
-      a href=(href) { (text) }
+      a href=(href) { (text.render()) }
     }
   }
 }

@@ -4,7 +4,7 @@ use crate::components;
 use crate::models::modlist::ModList;
 use crate::utils::symlinks::get_children_without_symlinks;
 
-use actix_web::web::HttpRequest;
+use actix_web::HttpRequest;
 use actix_web::HttpResponse;
 use maud::html;
 

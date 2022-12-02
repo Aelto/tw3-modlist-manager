@@ -1,5 +1,6 @@
 use crate::components::header::header;
 use crate::components::menu::menu;
+use maud::Render;
 use maud::{html, Markup, DOCTYPE};
 
 pub fn page(page_title: &str, page_content: &Markup) -> Markup {
@@ -12,7 +13,7 @@ pub fn page(page_title: &str, page_content: &Markup) -> Markup {
         (menu(page_title))
 
         div id="content" {
-          (page_content)
+          (page_content.render())
         }
       }
     }

@@ -1,12 +1,10 @@
 #![feature(proc_macro_hygiene)]
-#![feature(bool_to_option)]
 // uncomment the line below when building a release.
 // It allows the binary to start in background without a cli window.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 extern crate chrono;
 
-use actix_files as fs;
 use actix_web::{web, App, HttpServer};
 
 mod api;
@@ -16,7 +14,7 @@ mod models;
 mod pages;
 mod utils;
 
-#[actix_rt::main]
+#[actix_web::main]
 async fn main() -> std::io::Result<()> {
   let port: u16 = std::env::args()
     .nth(1)

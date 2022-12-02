@@ -2,6 +2,7 @@ use std::fs;
 use std::path::Path;
 
 use crate::constants;
+use crate::utils::api_error::ApiError;
 use actix_web::{http, web, HttpRequest, HttpResponse, Result};
 use dirs;
 use serde::{Deserialize, Serialize};
@@ -31,17 +32,15 @@ pub async fn install_modlist(
   let modlist = modlist.unwrap();
 
   modlist.install().map_err(|err| {
-    HttpResponse::InternalServerError()
-      .content_type("text/plain")
-      .body(format!(
-        "Internal server error: could not install modlist {}. {}",
-        modlist.name, err
-      ))
+    api_error(format!(
+      "Internal server error: could not install modlist {}. {}",
+      modlist.name, err
+    ))
   })?;
 
   Ok(
     HttpResponse::Found()
-      .header(http::header::LOCATION, "/")
+      .append_header((http::header::LOCATION, "/"))
       .content_type("text/plain")
       .body("installed"),
   )
@@ -56,17 +55,15 @@ pub async fn create_modlist(
   _req: HttpRequest, form: web::Form<CreateModListBody>,
 ) -> Result<HttpResponse> {
   let _modlist = ModList::create(&form.modlist_name).map_err(|err| {
-    HttpResponse::InternalServerError()
-      .content_type("text/plain")
-      .body(format!(
-        "Internal server error: could not read modlist metadata. {}",
-        err
-      ))
+    api_error(format!(
+      "Internal server error: could not read modlist metadata. {}",
+      err
+    ))
   })?;
 
   Ok(
     HttpResponse::Found()
-      .header(http::header::LOCATION, "/")
+      .append_header(((http::header::LOCATION, "/")))
       .content_type("text/plain")
       .body("created"),
   )
@@ -86,10 +83,10 @@ pub async fn import_modlist(
   if modlist.is_none() {
     return Ok(
       HttpResponse::NotFound()
-        .header(
+        .append_header((
           http::header::LOCATION,
           format!("/modlist/{}", form.modlist_name),
-        )
+        ))
         .content_type("text/plain")
         .body("no such modlist"),
     );
@@ -97,32 +94,36 @@ pub async fn import_modlist(
 
   let mut modlist = modlist.unwrap();
 
-  modlist.read_metadata_from_disk().map_err(|err| {
-    HttpResponse::InternalServerError()
-      .content_type("text/plain")
-      .body(format!(
-        "Internal server error: could not read modlist metadata. {}",
-        err
-      ))
-  })?;
+  if let Err(err) = modlist.read_metadata_from_disk() {
+    return Ok(
+      HttpResponse::InternalServerError()
+        .content_type("text/plain")
+        .body(format!(
+          "Internal server error: could not read modlist metadata. {}",
+          err
+        )),
+    );
+  }
 
   modlist.import_modlist(&form.imported_name);
 
-  modlist.write_metadata_to_disk().map_err(|err| {
-    HttpResponse::InternalServerError()
-      .content_type("text/plain")
-      .body(format!(
-        "Internal server error: could not write modlist metadata. {}",
-        err
-      ))
-  })?;
+  if let Err(err) = modlist.write_metadata_to_disk() {
+    return Ok(
+      HttpResponse::InternalServerError()
+        .content_type("text/plain")
+        .body(format!(
+          "Internal server error: could not write modlist metadata. {}",
+          err
+        )),
+    );
+  }
 
   Ok(
     HttpResponse::Found()
-      .header(
+      .append_header((
         http::header::LOCATION,
         format!("/modlist/{}", form.modlist_name),
-      )
+      ))
       .content_type("text/plain")
       .body("imported"),
   )
@@ -142,10 +143,10 @@ pub async fn remove_imported_modlist(
   if modlist.is_none() {
     return Ok(
       HttpResponse::NotFound()
-        .header(
+        .append_header((
           http::header::LOCATION,
           format!("/modlist/{}", form.modlist_name),
-        )
+        ))
         .content_type("text/plain")
         .body("no such modlist"),
     );
@@ -153,32 +154,36 @@ pub async fn remove_imported_modlist(
 
   let mut modlist = modlist.unwrap();
 
-  modlist.read_metadata_from_disk().map_err(|err| {
-    HttpResponse::InternalServerError()
-      .content_type("text/plain")
-      .body(format!(
-        "Internal server error: could not read modlist metadata. {}",
-        err
-      ))
-  })?;
+  if let Err(err) = modlist.read_metadata_from_disk() {
+    return Ok(
+      HttpResponse::InternalServerError()
+        .content_type("text/plain")
+        .body(format!(
+          "Internal server error: could not read modlist metadata. {}",
+          err
+        )),
+    );
+  }
 
   modlist.remove_import(&form.imported_name);
 
-  modlist.write_metadata_to_disk().map_err(|err| {
-    HttpResponse::InternalServerError()
-      .content_type("text/plain")
-      .body(format!(
-        "Internal server error: could not write modlist metadata. {}",
-        err
-      ))
-  })?;
+  if let Err(err) = modlist.write_metadata_to_disk() {
+    return Ok(
+      HttpResponse::InternalServerError()
+        .content_type("text/plain")
+        .body(format!(
+          "Internal server error: could not write modlist metadata. {}",
+          err
+        )),
+    );
+  }
 
   Ok(
     HttpResponse::Found()
-      .header(
+      .append_header((
         http::header::LOCATION,
         format!("/modlist/{}", form.modlist_name),
-      )
+      ))
       .content_type("text/plain")
       .body("removed"),
   )
@@ -205,21 +210,23 @@ pub async fn load_imports_modlist(
 
   let mut modlist = modlist.unwrap();
 
-  modlist.load_imported_modlists().map_err(|err| {
-    HttpResponse::InternalServerError()
-      .content_type("text/plain")
-      .body(format!(
-        "Internal server error: could not load all imported modlists. {}",
-        err
-      ))
-  })?;
+  if let Err(err) = modlist.load_imported_modlists() {
+    return Ok(
+      HttpResponse::InternalServerError()
+        .content_type("text/plain")
+        .body(format!(
+          "Internal server error: could not load all imported modlists. {}",
+          err
+        )),
+    );
+  }
 
   Ok(
     HttpResponse::Found()
-      .header(
+      .append_header((
         http::header::LOCATION,
         format!("/modlist/{}", form.modlist_name),
-      )
+      ))
       .content_type("text/plain")
       .body("loaded"),
   )
@@ -245,21 +252,23 @@ pub async fn unload_imports_modlist(
 
   let modlist = modlist.unwrap();
 
-  modlist.unload_imported_modlists().map_err(|err| {
-    HttpResponse::InternalServerError()
-      .content_type("text/plain")
-      .body(format!(
-        "Internal server error: could not unload all imported modlists. {}",
-        err
-      ))
-  })?;
+  if let Err(err) = modlist.unload_imported_modlists() {
+    return Ok(
+      HttpResponse::InternalServerError()
+        .content_type("text/plain")
+        .body(format!(
+          "Internal server error: could not unload all imported modlists. {}",
+          err
+        )),
+    );
+  }
 
   Ok(
     HttpResponse::Found()
-      .header(
+      .append_header((
         http::header::LOCATION,
         format!("/modlist/{}", form.modlist_name),
-      )
+      ))
       .content_type("text/plain")
       .body("unloaded"),
   )
@@ -279,11 +288,9 @@ pub async fn initialize(_req: HttpRequest) -> Result<HttpResponse> {
     .join("content0")
     .join("bundles");
   let current_saves_path = dirs::document_dir()
-    .ok_or(
-      HttpResponse::InternalServerError()
-        .content_type("text/plain")
-        .body("Internal server error: could not find the Documents directory"),
-    )?
+    .ok_or(api_error(
+      "Internal server error: could not find the Documents directory",
+    ))?
     .join("The Witcher 3");
   let current_menu_path = witcher_root
     .join("bin")
@@ -423,7 +430,7 @@ pub async fn initialize(_req: HttpRequest) -> Result<HttpResponse> {
 
   Ok(
     HttpResponse::Found()
-      .header(http::header::LOCATION, "/")
+      .append_header((http::header::LOCATION, "/"))
       .content_type("text/plain")
       .body("initialized"),
   )
@@ -450,32 +457,36 @@ pub async fn move_imported_modlist_down(
 
   let mut modlist = modlist.unwrap();
 
-  modlist.read_metadata_from_disk().map_err(|err| {
-    HttpResponse::InternalServerError()
-      .content_type("text/plain")
-      .body(format!(
-        "Internal server error: could not read modlist metadata. {}",
-        err
-      ))
-  })?;
+  if let Err(err) = modlist.read_metadata_from_disk() {
+    return Ok(
+      HttpResponse::InternalServerError()
+        .content_type("text/plain")
+        .body(format!(
+          "Internal server error: could not read modlist metadata. {}",
+          err
+        )),
+    );
+  }
 
   modlist.move_import_down(&form.imported_modlist_name);
 
-  modlist.write_metadata_to_disk().map_err(|err| {
-    HttpResponse::InternalServerError()
-      .content_type("text/plain")
-      .body(format!(
-        "Internal server error: could not write modlist metadata. {}",
-        err
-      ))
-  })?;
+  if let Err(err) = modlist.write_metadata_to_disk() {
+    return Ok(
+      HttpResponse::InternalServerError()
+        .content_type("text/plain")
+        .body(format!(
+          "Internal server error: could not write modlist metadata. {}",
+          err
+        )),
+    );
+  }
 
   Ok(
     HttpResponse::Found()
-      .header(
+      .append_header((
         http::header::LOCATION,
         format!("/modlist/{}", form.modlist_name),
-      )
+      ))
       .content_type("text/plain")
       .body("import moved down"),
   )
@@ -502,32 +513,36 @@ pub async fn move_imported_modlist_up(
 
   let mut modlist = modlist.unwrap();
 
-  modlist.read_metadata_from_disk().map_err(|err| {
-    HttpResponse::InternalServerError()
-      .content_type("text/plain")
-      .body(format!(
-        "Internal server error: could not read modlist metadata. {}",
-        err
-      ))
-  })?;
+  if let Err(err) = modlist.read_metadata_from_disk() {
+    return Ok(
+      HttpResponse::InternalServerError()
+        .content_type("text/plain")
+        .body(format!(
+          "Internal server error: could not read modlist metadata. {}",
+          err
+        )),
+    );
+  }
 
   modlist.move_import_up(&form.imported_modlist_name);
 
-  modlist.write_metadata_to_disk().map_err(|err| {
-    HttpResponse::InternalServerError()
-      .content_type("text/plain")
-      .body(format!(
-        "Internal server error: could not write modlist metadata. {}",
-        err
-      ))
-  })?;
+  if let Err(err) = modlist.write_metadata_to_disk() {
+    return Ok(
+      HttpResponse::InternalServerError()
+        .content_type("text/plain")
+        .body(format!(
+          "Internal server error: could not write modlist metadata. {}",
+          err
+        )),
+    );
+  }
 
   Ok(
     HttpResponse::Found()
-      .header(
+      .append_header((
         http::header::LOCATION,
         format!("/modlist/{}", form.modlist_name),
-      )
+      ))
       .content_type("text/plain")
       .body("import moved up"),
   )
@@ -554,24 +569,26 @@ pub async fn view_modlist(
 
   let modlist = modlist.unwrap();
 
-  std::process::Command::new("explorer")
+  if let Err(err) = std::process::Command::new("explorer")
     .arg(modlist.path().join(&form.folder_name))
     .output()
-    .map_err(|err| {
+  {
+    return Ok(
       HttpResponse::InternalServerError()
         .content_type("text/plain")
         .body(format!(
           "Internal server error: could not view modlist. {}",
           err
-        ))
-    })?;
+        )),
+    );
+  }
 
   Ok(
     HttpResponse::Found()
-      .header(
+      .append_header((
         http::header::LOCATION,
         format!("/modlist/{}", form.modlist_name),
-      )
+      ))
       .content_type("text/plain")
       .body("modlist viewed"),
   )
@@ -599,14 +616,16 @@ pub async fn merge_modlist(
 
   // first we install the modlist as scriptmerger can only work on an installed
   // modlist
-  modlist.install().map_err(|err| {
-    HttpResponse::InternalServerError()
-      .content_type("text/plain")
-      .body(format!(
-        "Internal server error: could not install modlist {}. {}",
-        modlist.name, err
-      ))
-  })?;
+  if let Err(err) = modlist.install() {
+    return Ok(
+      HttpResponse::InternalServerError()
+        .content_type("text/plain")
+        .body(format!(
+          "Internal server error: could not install modlist {}. {}",
+          modlist.name, err
+        )),
+    );
+  }
 
   let scriptmerger_path = std::env::current_dir()
     .unwrap()
@@ -621,15 +640,13 @@ pub async fn merge_modlist(
       .arg(constants::SCRIPTMERGER_EXE_NAME)
       .output()
       .map_err(|err| {
-        HttpResponse::InternalServerError()
-          .content_type("text/plain")
-          .body(format!(
-            "Internal server error: could not merge modlist. {}.
-            Make sure your scriptmerger is installed in the correct directory,
-            please refer to the written documentation about merging modlists for
-            more information",
-            err
-          ))
+        api_error(format!(
+          "Internal server error: could not merge modlist. {}.
+          Make sure your scriptmerger is installed in the correct directory,
+          ple);ase refer to the written documentation about merging modlists for
+          more information",
+          err
+        ))
       })?;
   } else if cfg!(target_os = "linux") {
     std::process::Command::new("sh")
@@ -637,24 +654,22 @@ pub async fn merge_modlist(
       .arg(scriptmerger_path.join(constants::SCRIPTMERGER_EXE_NAME))
       .output()
       .map_err(|err| {
-        HttpResponse::InternalServerError()
-          .content_type("text/plain")
-          .body(format!(
-            "Internal server error: could not merge modlist. {}.
-            Make sure your scriptmerger is installed in the correct directory,
-            please refer to the written documentation about merging modlists for
-            more information",
-            err
-          ))
+        api_error(format!(
+          "Internal server error: could not merge modlist. {}.
+          Make sure your scriptmerger is installed in the correct directory,
+          please refer to the written documentation about merging modlists for
+          more information",
+          err
+        ))
       })?;
   }
 
   Ok(
     HttpResponse::Found()
-      .header(
+      .append_header((
         http::header::LOCATION,
         format!("/modlist/{}", form.modlist_name),
-      )
+      ))
       .content_type("text/plain")
       .body("modlist merged"),
   )
@@ -683,10 +698,10 @@ pub async fn merge_modlist_scripts(
 
   Ok(
     HttpResponse::Found()
-      .header(
+      .append_header((
         http::header::LOCATION,
         format!("/modlist/{}", form.modlist_name),
-      )
+      ))
       .content_type("text/plain")
       .body("modlist merged"),
   )
@@ -736,16 +751,18 @@ pub async fn merge_modlist_scripts_old(
     .stdout(Stdio::piped())
     .spawn()
     .map_err(|err| {
-      HttpResponse::InternalServerError()
-          .content_type("text/plain")
-          .body(format!("Internal server error: could not run the tw3-script-merger tool. {}", err))
+      api_error(format!(
+        "Internal server error: could not run the tw3-script-merger tool. {}",
+        err
+      ))
     })?
     .stdout
     .ok_or_else(|| Error::new(ErrorKind::Other, "Could not capture standard output"))
     .map_err(|err| {
-      HttpResponse::InternalServerError()
-          .content_type("text/plain")
-          .body(format!("Internal server error: an error occured when listening to the tw3-script-merger tool. {}", err))
+      api_error(format!(
+        "Internal server error: an error occured when listening to the tw3-script-merger tool. {}",
+        err
+      ))
     })?;
 
   let reader = BufReader::new(stdout);
@@ -757,10 +774,10 @@ pub async fn merge_modlist_scripts_old(
 
   Ok(
     HttpResponse::Found()
-      .header(
+      .append_header((
         http::header::LOCATION,
         format!("/modlist/{}", form.modlist_name),
-      )
+      ))
       .content_type("text/plain")
       .body("modlist merged"),
   )
@@ -786,32 +803,36 @@ pub async fn modlist_visibility_up(
 
   let mut modlist = modlist.unwrap();
 
-  modlist.read_metadata_from_disk().map_err(|err| {
-    HttpResponse::InternalServerError()
-      .content_type("text/plain")
-      .body(format!(
-        "Internal server error: could not read modlist metadata. {}",
-        err
-      ))
-  })?;
+  if let Err(err) = modlist.read_metadata_from_disk() {
+    return Ok(
+      HttpResponse::InternalServerError()
+        .content_type("text/plain")
+        .body(format!(
+          "Internal server error: could not read modlist metadata. {}",
+          err
+        )),
+    );
+  }
 
   modlist.visibility += 1;
 
-  modlist.write_metadata_to_disk().map_err(|err| {
-    HttpResponse::InternalServerError()
-      .content_type("text/plain")
-      .body(format!(
-        "Internal server error: could not write modlist metadata. {}",
-        err
-      ))
-  })?;
+  if let Err(err) = modlist.write_metadata_to_disk() {
+    return Ok(
+      HttpResponse::InternalServerError()
+        .content_type("text/plain")
+        .body(format!(
+          "Internal server error: could not write modlist metadata. {}",
+          err
+        )),
+    );
+  }
 
   Ok(
     HttpResponse::Found()
-      .header(
+      .append_header((
         http::header::LOCATION,
         format!("/modlist/{}", form.modlist_name),
-      )
+      ))
       .content_type("text/plain")
       .body("visibility decreased"),
   )
@@ -837,32 +858,36 @@ pub async fn modlist_visibility_down(
 
   let mut modlist = modlist.unwrap();
 
-  modlist.read_metadata_from_disk().map_err(|err| {
-    HttpResponse::InternalServerError()
-      .content_type("text/plain")
-      .body(format!(
-        "Internal server error: could not read modlist metadata. {}",
-        err
-      ))
-  })?;
+  if let Err(err) = modlist.read_metadata_from_disk() {
+    return Ok(
+      HttpResponse::InternalServerError()
+        .content_type("text/plain")
+        .body(format!(
+          "Internal server error: could not read modlist metadata. {}",
+          err
+        )),
+    );
+  }
 
   modlist.visibility -= 1;
 
-  modlist.write_metadata_to_disk().map_err(|err| {
-    HttpResponse::InternalServerError()
-      .content_type("text/plain")
-      .body(format!(
-        "Internal server error: could not write modlist metadata. {}",
-        err
-      ))
-  })?;
+  if let Err(err) = modlist.write_metadata_to_disk() {
+    return Ok(
+      HttpResponse::InternalServerError()
+        .content_type("text/plain")
+        .body(format!(
+          "Internal server error: could not write modlist metadata. {}",
+          err
+        )),
+    );
+  }
 
   Ok(
     HttpResponse::Found()
-      .header(
+      .append_header((
         http::header::LOCATION,
         format!("/modlist/{}", form.modlist_name),
-      )
+      ))
       .content_type("text/plain")
       .body("visibility increased"),
   )
@@ -888,21 +913,23 @@ pub async fn pack_modlist(
 
   let modlist = modlist.unwrap();
 
-  modlist.pack().map_err(|err| {
-    HttpResponse::InternalServerError()
-      .content_type("text/plain")
-      .body(format!(
-        "Internal server error: could not pack the modlist. {}",
-        err
-      ))
-  })?;
+  if let Err(err) = modlist.pack() {
+    return Ok(
+      HttpResponse::InternalServerError()
+        .content_type("text/plain")
+        .body(format!(
+          "Internal server error: could not pack the modlist. {}",
+          err
+        )),
+    );
+  }
 
   Ok(
     HttpResponse::Found()
-      .header(
+      .append_header((
         http::header::LOCATION,
         format!("/modlist/{}", form.modlist_name),
-      )
+      ))
       .content_type("text/plain")
       .body("modlist packed"),
   )
@@ -928,21 +955,23 @@ pub async fn unpack_modlist(
 
   let modlist = modlist.unwrap();
 
-  modlist.unpack().map_err(|err| {
-    HttpResponse::InternalServerError()
-      .content_type("text/plain")
-      .body(format!(
-        "Internal server error: could not unpack the modlist. {}",
-        err
-      ))
-  })?;
+  if let Err(err) = modlist.unpack() {
+    return Ok(
+      HttpResponse::InternalServerError()
+        .content_type("text/plain")
+        .body(format!(
+          "Internal server error: could not unpack the modlist. {}",
+          err
+        )),
+    );
+  }
 
   Ok(
     HttpResponse::Found()
-      .header(
+      .append_header((
         http::header::LOCATION,
         format!("/modlist/{}", form.modlist_name),
-      )
+      ))
       .content_type("text/plain")
       .body("modlist unpacked"),
   )
@@ -980,21 +1009,23 @@ pub async fn rename_modlist_folder(
     .join(&form.folder_type)
     .join(&form.new_folder_name);
 
-  fs::rename(origin, destination).map_err(|err| {
-    HttpResponse::InternalServerError()
-      .content_type("text/plain")
-      .body(format!(
-        "Internal server error: could not rename the file. {}",
-        err
-      ))
-  })?;
+  if let Err(err) = fs::rename(origin, destination) {
+    return Ok(
+      HttpResponse::InternalServerError()
+        .content_type("text/plain")
+        .body(format!(
+          "Internal server error: could not rename the file. {}",
+          err
+        )),
+    );
+  }
 
   Ok(
     HttpResponse::Found()
-      .header(
+      .append_header((
         http::header::LOCATION,
         format!("/modlist/{}", form.modlist_name),
-      )
+      ))
       .content_type("text/plain")
       .body("folder rename"),
   )
@@ -1011,15 +1042,11 @@ pub struct MoveModlistFolderBody {
 pub async fn move_modlist_folder(
   _req: HttpRequest, form: web::Form<MoveModlistFolderBody>,
 ) -> Result<HttpResponse> {
-  fn get_modlist(modlist_name: &str) -> Result<ModList, HttpResponse> {
+  fn get_modlist(modlist_name: &str) -> Result<ModList, ApiError> {
     let modlist = ModList::get_by_name(modlist_name);
 
     if modlist.is_none() {
-      return Err(
-        HttpResponse::NotFound()
-          .content_type("text/plain")
-          .body("no such modlist"),
-      );
+      return Err(api_error("no such modlist"));
     }
 
     return Ok(modlist.unwrap());
@@ -1038,21 +1065,23 @@ pub async fn move_modlist_folder(
     .join(&form.folder_type)
     .join(&form.folder_name);
 
-  fs::rename(origin, destination).map_err(|err| {
-    HttpResponse::InternalServerError()
-      .content_type("text/plain")
-      .body(format!(
-        "Internal server error: could not move the file. {}",
-        err
-      ))
-  })?;
+  if let Err(err) = fs::rename(origin, destination) {
+    return Ok(
+      HttpResponse::InternalServerError()
+        .content_type("text/plain")
+        .body(format!(
+          "Internal server error: could not move the file. {}",
+          err
+        )),
+    );
+  }
 
   Ok(
     HttpResponse::Found()
-      .header(
+      .append_header((
         http::header::LOCATION,
         format!("/modlist/{}", form.modlist_name),
-      )
+      ))
       .content_type("text/plain")
       .body("folder moved"),
   )
@@ -1074,13 +1103,13 @@ pub async fn delete_modlist_folder(
   if form.folder_name != form.folder_name_confirmation {
     return Ok(
       HttpResponse::Found()
-        .header(
+        .append_header((
           http::header::LOCATION,
           format!(
             "/modlist/{}/edit/{}/{}",
             form.modlist_name, form.folder_type, form.folder_name
           ),
-        )
+        ))
         .content_type("text/plain")
         .body("confirmation does not match"),
     );
@@ -1104,33 +1133,37 @@ pub async fn delete_modlist_folder(
     .join(&form.folder_name);
 
   if origin.is_dir() {
-    fs::remove_dir_all(&origin).map_err(|err| {
-      HttpResponse::InternalServerError()
-        .content_type("text/plain")
-        .body(format!(
-          "Internal server error: could not remove the directory. {}",
-          err
-        ))
-    })?;
+    if let Err(err) = fs::remove_dir_all(&origin) {
+      return Ok(
+        HttpResponse::InternalServerError()
+          .content_type("text/plain")
+          .body(format!(
+            "Internal server error: could not remove the directory. {}",
+            err
+          )),
+      );
+    }
   }
 
   if origin.is_file() {
-    fs::remove_file(&origin).map_err(|err| {
-      HttpResponse::InternalServerError()
-        .content_type("text/plain")
-        .body(format!(
-          "Internal server error: could not remove the file. {}",
-          err
-        ))
-    })?;
+    if let Err(err) = fs::remove_file(&origin) {
+      return Ok(
+        HttpResponse::InternalServerError()
+          .content_type("text/plain")
+          .body(format!(
+            "Internal server error: could not remove the file. {}",
+            err
+          )),
+      );
+    }
   }
 
   Ok(
     HttpResponse::Found()
-      .header(
+      .append_header((
         http::header::LOCATION,
         format!("/modlist/{}", form.modlist_name),
-      )
+      ))
       .content_type("text/plain")
       .body("folder deleted"),
   )
@@ -1150,10 +1183,10 @@ pub async fn delete_modlist(
   if form.modlist_name != form.modlist_name_confirmation {
     return Ok(
       HttpResponse::Found()
-        .header(
+        .append_header((
           http::header::LOCATION,
           format!("/modlist/{}/edit", form.modlist_name),
-        )
+        ))
         .content_type("text/plain")
         .body("confirmation does not match"),
     );
@@ -1173,30 +1206,34 @@ pub async fn delete_modlist(
   let origin = modlist.path();
 
   if origin.is_dir() {
-    fs::remove_dir_all(&origin).map_err(|err| {
-      HttpResponse::InternalServerError()
-        .content_type("text/plain")
-        .body(format!(
-          "Internal server error: could not remove the directory. {}",
-          err
-        ))
-    })?;
+    if let Err(err) = fs::remove_dir_all(&origin) {
+      return Ok(
+        HttpResponse::InternalServerError()
+          .content_type("text/plain")
+          .body(format!(
+            "Internal server error: could not remove the directory. {}",
+            err
+          )),
+      );
+    }
   }
 
   if origin.is_file() {
-    fs::remove_file(&origin).map_err(|err| {
-      HttpResponse::InternalServerError()
-        .content_type("text/plain")
-        .body(format!(
-          "Internal server error: could not remove the file. {}",
-          err
-        ))
-    })?;
+    if let Err(err) = fs::remove_file(&origin) {
+      return Ok(
+        HttpResponse::InternalServerError()
+          .content_type("text/plain")
+          .body(format!(
+            "Internal server error: could not remove the file. {}",
+            err
+          )),
+      );
+    }
   }
 
   Ok(
     HttpResponse::Found()
-      .header(http::header::LOCATION, format!("/",))
+      .append_header((http::header::LOCATION, format!("/",)))
       .content_type("text/plain")
       .body("modlist deleted"),
   )
@@ -1227,21 +1264,23 @@ pub async fn rename_modlist(
   let mut destination = modlist.path();
   destination.set_file_name(&form.new_modlist_name);
 
-  fs::rename(origin, destination).map_err(|err| {
-    HttpResponse::InternalServerError()
-      .content_type("text/plain")
-      .body(format!(
-        "Internal server error: could not rename the modlist. {}",
-        err
-      ))
-  })?;
+  if let Err(err) = fs::rename(origin, destination) {
+    return Ok(
+      HttpResponse::InternalServerError()
+        .content_type("text/plain")
+        .body(format!(
+          "Internal server error: could not rename the modlist. {}",
+          err
+        )),
+    );
+  }
 
   Ok(
     HttpResponse::Found()
-      .header(
+      .append_header((
         http::header::LOCATION,
         format!("/modlist/{}", form.new_modlist_name),
-      )
+      ))
       .content_type("text/plain")
       .body("folder rename"),
   )
