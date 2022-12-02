@@ -428,14 +428,17 @@ impl ModList {
     fs::create_dir_all(self.bundles_path());
     fs::create_dir_all(self.mergedbundles_path());
 
-    let mergeinventory_content = "
-      <?xml version=\"1.0\" encoding=\"utf-8\"?>
-      <MergeInventory xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">
-        
-      </MergeInventory>
-    ".trim();
+    let mergeinventory_path = self.mergeinventory_path();
+    if !mergeinventory_path.exists() {
+      let mergeinventory_content = "
+        <?xml version=\"1.0\" encoding=\"utf-8\"?>
+        <MergeInventory xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">
+          
+        </MergeInventory>
+      ".trim();
 
-    fs::write(self.mergeinventory_path(), &mergeinventory_content);
+      fs::write(mergeinventory_path, &mergeinventory_content);
+    }
   }
 
   pub fn packed_folder_name(&self) -> String {
