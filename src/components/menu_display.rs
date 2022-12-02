@@ -12,7 +12,7 @@ pub fn menu_display(name: &str, modlist_name: &str) -> Markup {
         (name)
       }
     }
-    
+
     a href={"/modlist/"(modlist_name)"/edit/menus/"(name)}  { "edit" }
   }
 }

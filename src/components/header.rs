@@ -14,7 +14,7 @@ pub fn header(page_title: &str) -> Markup {
       style type="text/css" {
         (master_css_content())
       }
-  
+
       title { (page_title) }
     }
   }
@@ -185,5 +185,6 @@ fn master_css_content() -> String {
     padding-right: .2em;
     opacity: 1;
   }
-  ".to_owned()
+  "
+  .to_owned()
 }

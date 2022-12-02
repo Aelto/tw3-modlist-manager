@@ -9,7 +9,12 @@ pub fn symlink_children(source: PathBuf, destination: PathBuf) -> std::io::Resul
   for source_child_err in source_children {
     if let Ok(source_child_name) = source_child_err {
       // skip the children whose names start with ~
-      if source_child_name.file_name().into_string().unwrap_or_else(|_| String::from("~")).starts_with("~") {
+      if source_child_name
+        .file_name()
+        .into_string()
+        .unwrap_or_else(|_| String::from("~"))
+        .starts_with("~")
+      {
         continue;
       }
 
@@ -25,7 +30,10 @@ pub fn symlink_children(source: PathBuf, destination: PathBuf) -> std::io::Resul
       let absolute_to = current_dir.join(&child_path);
 
       if let Err(error) = make_symlink(&absolute_from, &absolute_to) {
-        println!("could not make symlink from {:?} to {:?}, error: {}", &absolute_from, &absolute_to, error);
+        println!(
+          "could not make symlink from {:?} to {:?}, error: {}",
+          &absolute_from, &absolute_to, error
+        );
       }
     }
   }
@@ -46,7 +54,11 @@ pub fn remove_symlinks(directory: &PathBuf) -> std::io::Result<()> {
       // is to try to parse the symlink. And this operation fails if it's not
       // a symlink.
       if let Err(error) = remove_symlink(&child.path()) {
-        println!("could not remove child symlink at {:?}, error: {}", &child.path(), error);
+        println!(
+          "could not remove child symlink at {:?}, error: {}",
+          &child.path(),
+          error
+        );
       }
     }
   }
@@ -66,27 +78,24 @@ pub fn make_symlink(from: &PathBuf, to: &PathBuf) -> std::io::Result<()> {
 pub fn remove_symlink(path: &PathBuf) -> std::io::Result<()> {
   use std::io::{Error, ErrorKind};
 
-  path.symlink_metadata()
-  // here we return if it's a symlink. The then_some transforms the boolean into
-  // an Option, and if it's None then it will skip the following and_then calls
-  
-  .and_then(|metadata| metadata
-    .file_type()
-    .is_symlink()
-    .then_some(0)
-    .ok_or(Error::new(ErrorKind::InvalidInput, "Input is not a symlink"))
-  )
-
-  .and_then(|_| fs::read_link(&path))
-  .and_then(|link|
-    match link.is_dir() {
-      
+  path
+    .symlink_metadata()
+    // here we return if it's a symlink. The then_some transforms the boolean into
+    // an Option, and if it's None then it will skip the following and_then calls
+    .and_then(|metadata| {
+      metadata
+        .file_type()
+        .is_symlink()
+        .then_some(0)
+        .ok_or(Error::new(
+          ErrorKind::InvalidInput,
+          "Input is not a symlink",
+        ))
+    })
+    .and_then(|_| fs::read_link(&path))
+    .and_then(|link| match link.is_dir() {
       // It's a symlink and a directory
-      true => {
-
-        
-        fs::remove_dir(path)
-      },
+      true => fs::remove_dir(path),
       // It's a symlink and a file
       false => {
         println!("removing symlink {:?}", &path);
@@ -94,17 +103,12 @@ pub fn remove_symlink(path: &PathBuf) -> std::io::Result<()> {
         // because on windows, if the symlink target doesn't exist anymore
         // it is neither a file nor a directory!
         if !link.is_file() {
-          fs::remove_file(path)
-          .or_else(|_| fs::remove_dir(path))
-        }
-        else {
+          fs::remove_file(path).or_else(|_| fs::remove_dir(path))
+        } else {
           fs::remove_file(path)
         }
-
-        
       }
-    }
-  )
+    })
 }
 
 pub fn get_children_without_symlinks(directory: &PathBuf) -> std::io::Result<Vec<String>> {
@@ -118,7 +122,8 @@ pub fn get_children_without_symlinks(directory: &PathBuf) -> std::io::Result<Vec
           continue;
         }
 
-        let filename = child.path()
+        let filename = child
+          .path()
           .file_name()
           .and_then(|filename| filename.to_str())
           .map(|str| str.to_owned());

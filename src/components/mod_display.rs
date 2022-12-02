@@ -12,7 +12,7 @@ pub fn mod_display(name: &str, modlist_name: &str, is_modlist_packed: bool) -> M
         (name)
       }
     }
-    
+
     @if !is_modlist_packed {
       a href={"/modlist/"(modlist_name)"/edit/mods/"(name)} { "edit" }
     }

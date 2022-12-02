@@ -1,9 +1,9 @@
 use crate::components;
 use crate::models::modlist::ModList;
 
-use maud::html;
 use actix_web::web::HttpRequest;
-use actix_web::{HttpResponse};
+use actix_web::HttpResponse;
+use maud::html;
 
 pub async fn render(req: HttpRequest) -> HttpResponse {
   let modlist_name = req
@@ -18,28 +18,25 @@ pub async fn render(req: HttpRequest) -> HttpResponse {
       h1 { "no such modlist" }
     };
     let view = components::page(&format!("modlist - {}", modlist_name), &content);
-  
+
     return HttpResponse::Ok()
-    .content_type("text/html")
-    .body(view.into_string())
+      .content_type("text/html")
+      .body(view.into_string());
   }
 
   let modlist = some_modlist.unwrap();
 
-  let folder_type = req
-    .match_info()
-    .get("folder_type")
-    .unwrap_or("mods");
-  
+  let folder_type = req.match_info().get("folder_type").unwrap_or("mods");
+
   let folder_name = req
     .match_info()
     .get("folder_name")
     .unwrap_or("unknown_folder");
 
   let all_modlists = ModList::get_all()
-      .into_iter()
-      .filter(|ml| modlist.name != ml.name)
-      .collect::<Vec<ModList>>();
+    .into_iter()
+    .filter(|ml| modlist.name != ml.name)
+    .collect::<Vec<ModList>>();
 
   let folder_type_singular_form = if folder_type.ends_with("s") {
     folder_type.trim_end_matches("s")
@@ -94,7 +91,7 @@ pub async fn render(req: HttpRequest) -> HttpResponse {
           br;
           "Move it to another modlist."
 
-          
+
         }
       }
 
@@ -122,10 +119,10 @@ pub async fn render(req: HttpRequest) -> HttpResponse {
   };
 
   let view = components::page(&format!("{} - modlist", modlist_name), &content);
-  
+
   HttpResponse::Ok()
-  .content_type("text/html")
-  .body(view.into_string())
+    .content_type("text/html")
+    .body(view.into_string())
 }
 
 fn get_stylesheet() -> String {
@@ -183,5 +180,6 @@ fn get_stylesheet() -> String {
       font-size: 150%;
     }
 
-  ".to_owned()
+  "
+  .to_owned()
 }

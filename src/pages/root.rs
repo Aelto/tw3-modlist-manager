@@ -1,18 +1,16 @@
 use crate::components;
 use crate::models::modlist::ModList;
 
-use maud::html;
 use actix_web::web::HttpRequest;
-use actix_web::{HttpResponse};
+use actix_web::HttpResponse;
+use maud::html;
 
 pub async fn render(req: HttpRequest) -> HttpResponse {
-  
   let query = req.query_string();
   let query = qstring::QString::from(query);
-  
-  let visibility = query.get("visibility")
-    .and_then(|n| n.parse::<i64>().ok());
-  
+
+  let visibility = query.get("visibility").and_then(|n| n.parse::<i64>().ok());
+
   let mut modlists = match visibility {
     Some(v) => ModList::get_all()
       .iter()
@@ -21,9 +19,8 @@ pub async fn render(req: HttpRequest) -> HttpResponse {
       .map(Result::unwrap)
       .filter(|modlist| modlist.visibility == v)
       .collect(),
-    None => ModList::get_all()
+    None => ModList::get_all(),
   };
-
 
   for i in 0..modlists.len() {
     if let Err(error) = modlists[i].read_metadata_from_disk() {
@@ -32,13 +29,12 @@ pub async fn render(req: HttpRequest) -> HttpResponse {
         p { (error) }
       };
       let view = components::page("root", &content);
-    
+
       return HttpResponse::Ok()
-      .content_type("text/html")
-      .body(view.into_string())
+        .content_type("text/html")
+        .body(view.into_string());
     }
   }
-
 
   let mut installable_modlists = Vec::new();
   let mut installable_modlists_visibility_levels = std::collections::HashSet::new();
@@ -60,17 +56,20 @@ pub async fn render(req: HttpRequest) -> HttpResponse {
     }
   }
 
-  let mut shared_levels = shared_modlists_visibility_levels.into_iter().collect::<Vec<i64>>();
+  let mut shared_levels = shared_modlists_visibility_levels
+    .into_iter()
+    .collect::<Vec<i64>>();
   shared_levels.sort();
   shared_levels.reverse();
 
-  let mut installable_levels = installable_modlists_visibility_levels.into_iter().collect::<Vec<i64>>();
+  let mut installable_levels = installable_modlists_visibility_levels
+    .into_iter()
+    .collect::<Vec<i64>>();
   installable_levels.sort();
   installable_levels.reverse();
 
   // if there is no vanilla modlist, force a call to initialize
-  let should_initialize = ModList::get_by_name("vanilla")
-    .is_none();
+  let should_initialize = ModList::get_by_name("vanilla").is_none();
 
   let content = html! {
     section {
@@ -96,7 +95,7 @@ pub async fn render(req: HttpRequest) -> HttpResponse {
               @for level in &shared_levels {
                 li class="level-listing" {
                   h3 { (level) }
-  
+
                   ul {
                     @for index in &shared_modlists {
                       @if &modlists[*index].visibility == level {
@@ -118,7 +117,7 @@ pub async fn render(req: HttpRequest) -> HttpResponse {
               @for level in &installable_levels {
                 li class="level-listing" {
                   h3 { (level) }
-  
+
                   ul {
                     @for index in &installable_modlists {
                       @if &modlists[*index].visibility == level {
@@ -128,7 +127,7 @@ pub async fn render(req: HttpRequest) -> HttpResponse {
                           @if &modlists[*index].name == "vanilla" || modlists[*index].has_modlist_imported("vanilla") {
                             form method="post" action="/api/modlist/install" {
                               input type="hidden" name="name" value=(&modlists[*index].name);
-                              
+
                               input type="submit" value="install";
                             }
                           }
@@ -157,10 +156,10 @@ pub async fn render(req: HttpRequest) -> HttpResponse {
   };
 
   let view = components::page("modlists", &content);
-  
+
   HttpResponse::Ok()
-  .content_type("text/html")
-  .body(view.into_string())
+    .content_type("text/html")
+    .body(view.into_string())
 }
 
 fn get_stylesheet() -> String {
@@ -223,5 +222,6 @@ fn get_stylesheet() -> String {
       top: calc(50% + 1px);
       left: -24px;
     }
-  ".to_owned()
+  "
+  .to_owned()
 }

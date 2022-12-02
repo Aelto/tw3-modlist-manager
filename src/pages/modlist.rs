@@ -4,9 +4,9 @@ use crate::components;
 use crate::models::modlist::ModList;
 use crate::utils::symlinks::get_children_without_symlinks;
 
-use maud::html;
 use actix_web::web::HttpRequest;
-use actix_web::{HttpResponse};
+use actix_web::HttpResponse;
+use maud::html;
 
 pub async fn render(req: HttpRequest) -> HttpResponse {
   let modlist_name = req
@@ -21,35 +21,35 @@ pub async fn render(req: HttpRequest) -> HttpResponse {
       h1 { "no such modlist" }
     };
     let view = components::page(&format!("modlist - {}", modlist_name), &content);
-  
+
     return HttpResponse::Ok()
-    .content_type("text/html")
-    .body(view.into_string())
+      .content_type("text/html")
+      .body(view.into_string());
   }
 
   let mut modlist = some_modlist.unwrap();
-  
+
   if let Err(error) = modlist.read_metadata_from_disk() {
     let content = html! {
       h1 { "Could not read modlist metadata" }
       p { (error) }
     };
     let view = components::page("root", &content);
-  
+
     return HttpResponse::Ok()
-    .content_type("text/html")
-    .body(view.into_string())
+      .content_type("text/html")
+      .body(view.into_string());
   }
 
   let all_modlists = ModList::get_all();
-  let all_modlists = all_modlists
-    .iter()
-    .filter(|ml| modlist.name != ml.name);
+  let all_modlists = all_modlists.iter().filter(|ml| modlist.name != ml.name);
 
-  let does_import_a_modlist = modlist.imported_modlists
+  let does_import_a_modlist = modlist
+    .imported_modlists
     .iter()
     .filter(|modlist_name| modlist_name != &"vanilla")
-    .count() > 0;
+    .count()
+    > 0;
 
   let packing_help = "
     Packing transforms a modlist in a way that allows you to pre-merge the mods
@@ -125,7 +125,7 @@ unload the import and remove vanilla and you can safely pack your modlist.
         h1.modlist-name {
           (modlist.name)
         }
-        
+
         a class="small" href={"/modlist/"(modlist.name)"/edit"} { "edit" }
       }
 
@@ -218,14 +218,14 @@ unload the import and remove vanilla and you can safely pack your modlist.
             legend { "import a modlist" }
 
             input type="hidden" name="modlist_name" value=(modlist.name);
-            
+
             div class="row even" {
               select name="imported_name" {
                 @for ml in all_modlists {
                   option value=(ml.name) { (ml.name) }
                 }
               }
-  
+
               input type="submit" value="import";
             }
           }
@@ -236,7 +236,7 @@ unload the import and remove vanilla and you can safely pack your modlist.
             input type="hidden" name="modlist_name" value=(modlist.name);
             input type="submit" value="load imports";
           }
-  
+
           form method="post" action="/api/modlist/unload-imports" {
             input type="hidden" name="modlist_name" value=(modlist.name);
             input type="submit" value="unload imports";
@@ -252,21 +252,21 @@ unload the import and remove vanilla and you can safely pack your modlist.
                 form method="post" action="/api/modlist/move-import-up" {
                   input type="hidden" name="modlist_name" value=(modlist.name);
                   input type="hidden" name="imported_modlist_name" value=(imported_modlist);
-  
+
                   input type="submit" class="rotate-90-clockwise text-style" value="<";
                 }
-  
+
                 form method="post" action="/api/modlist/move-import-down" {
                   input type="hidden" name="modlist_name" value=(modlist.name);
                   input type="hidden" name="imported_modlist_name" value=(imported_modlist);
-  
+
                   input type="submit" class="rotate-90-clockwise text-style" value=">";
                 }
-  
+
                 form method="post" action="/api/modlist/remove-import" {
                   input type="hidden" name="modlist_name" value=(modlist.name);
                   input type="hidden" name="imported_name" value=(imported_modlist);
-  
+
                   input type="submit" value="remove";
                 }
               }
@@ -281,10 +281,10 @@ unload the import and remove vanilla and you can safely pack your modlist.
   };
 
   let view = components::page(&format!("{} - modlist", modlist_name), &content);
-  
+
   HttpResponse::Ok()
-  .content_type("text/html")
-  .body(view.into_string())
+    .content_type("text/html")
+    .body(view.into_string())
 }
 
 fn get_stylesheet() -> String {
@@ -501,13 +501,14 @@ fn get_stylesheet() -> String {
     .theirs {
       color: #E91E63;
     }
-  ".to_owned()
+  "
+  .to_owned()
 }
 
 enum FolderViewType {
   Mods,
   Dlcs,
-  Menus
+  Menus,
 }
 
 fn get_folder_from_view_type(modlist: &ModList, view_type: &FolderViewType) -> PathBuf {
@@ -518,7 +519,9 @@ fn get_folder_from_view_type(modlist: &ModList, view_type: &FolderViewType) -> P
   }
 }
 
-fn get_modlist_folders_view(modlist: &ModList, view_type: &FolderViewType, is_top_level: bool) -> maud::Markup {
+fn get_modlist_folders_view(
+  modlist: &ModList, view_type: &FolderViewType, is_top_level: bool,
+) -> maud::Markup {
   let is_modlist_packed = modlist.is_packed();
 
   // when a modlist is packed it doesn't show all the mods but only the pack folder
@@ -529,7 +532,7 @@ fn get_modlist_folders_view(modlist: &ModList, view_type: &FolderViewType, is_to
           ul class="folder-list" {
             li {
               h3.packed-folder { (components::modlist_link(&modlist.name)) span.small{" packed"} }
-      
+
               ul class={"folder-list " (if !is_top_level {"hidden"} else {""})} {
                 li.folder-listing {
                   (&modlist.packed_folder_name())
@@ -539,7 +542,7 @@ fn get_modlist_folders_view(modlist: &ModList, view_type: &FolderViewType, is_to
           }
         }
       }
-  
+
       _ => {}
     };
   }
@@ -552,7 +555,7 @@ fn get_modlist_folders_view(modlist: &ModList, view_type: &FolderViewType, is_to
       li {
         "An error occured when fetching the modlist " (modlist.name) " folders. ERROR:" (error)
       }
-    }
+    };
   }
 
   let children = children_result.unwrap();
@@ -581,13 +584,15 @@ fn get_modlist_folders_view(modlist: &ModList, view_type: &FolderViewType, is_to
       };
 
       imported_mods.push((imported_modlist, error_html));
-      
+
       continue;
     }
 
-    imported_mods.push((ModList::get_by_name(&imported_modlist.name).unwrap(), get_modlist_folders_view(&imported_modlist, view_type, false)));
+    imported_mods.push((
+      ModList::get_by_name(&imported_modlist.name).unwrap(),
+      get_modlist_folders_view(&imported_modlist, view_type, false),
+    ));
   }
-
 
   html! {
     ul class="folder-list" {
@@ -616,8 +621,8 @@ fn get_modlist_folders_view(modlist: &ModList, view_type: &FolderViewType, is_to
               }
             }
           }
-          
-      
+
+
           @for (_imported_modlist, imported_html) in imported_mods {
             li class={"folder-listing row do-not-hide-bar" } {
               span.toggle-modlist-folder-button { "[+]" }
@@ -644,5 +649,6 @@ fn get_javascript() -> String {
         .replace('$', '+');
     }
   });
-  ".to_string()
+  "
+  .to_string()
 }

@@ -5,8 +5,7 @@ use std::path::PathBuf;
 pub fn copy_across_drives(from: PathBuf, to: PathBuf) -> std::io::Result<()> {
   if cfg!(target_os = "linux") {
     std::fs::copy(from, to)?;
-  }
-  else if cfg!(target_os = "windows") {
+  } else if cfg!(target_os = "windows") {
     std::process::Command::new("cmd")
       .arg("/C")
       .arg("xcopy")

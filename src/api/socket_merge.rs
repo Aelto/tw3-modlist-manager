@@ -1,9 +1,17 @@
-use std::{cell::Cell, error::Error, io::{BufRead, Read}, io::BufReader, path::{Path, PathBuf}, process::ChildStdout, sync::{Arc, Mutex}};
 use encoding_rs_io::DecodeReaderBytes;
 use serde::{Deserialize, Serialize};
 use std::thread;
-use websocket::{Message, sync::Server};
+use std::{
+  cell::Cell,
+  error::Error,
+  io::BufReader,
+  io::{BufRead, Read},
+  path::{Path, PathBuf},
+  process::ChildStdout,
+  sync::{Arc, Mutex},
+};
 use websocket::OwnedMessage;
+use websocket::{sync::Server, Message};
 
 use crate::{constants, models::modlist::ModList};
 
@@ -27,8 +35,8 @@ fn start_merging(modlist_name: &str) -> std::result::Result<BufReader<ChildStdou
     .join("content")
     .join("scripts");
 
-  use std::process::{Command, Stdio};
   use std::io::{Error, ErrorKind};
+  use std::process::{Command, Stdio};
 
   let stdout = Command::new(scriptmerger_path)
     .arg("--clean")
@@ -44,12 +52,18 @@ fn start_merging(modlist_name: &str) -> std::result::Result<BufReader<ChildStdou
     .stdout(Stdio::piped())
     .spawn()
     .map_err(|err| {
-      format!("Internal server error: could not run the tw3-script-merger tool. {}", err)
+      format!(
+        "Internal server error: could not run the tw3-script-merger tool. {}",
+        err
+      )
     })?
     .stdout
     .ok_or_else(|| Error::new(ErrorKind::Other, "Could not capture standard output"))
     .map_err(|err| {
-      format!("Internal server error: an error occured when listening to the tw3-script-merger tool. {}", err)
+      format!(
+        "Internal server error: an error occured when listening to the tw3-script-merger tool. {}",
+        err
+      )
     })?;
 
   Ok(BufReader::new(stdout))
@@ -73,7 +87,7 @@ fn apply_conflict_resolutions(resolution: &SocketMessage) {
   let original_start = "||||||| original";
   let original_end = "=======";
   let conflict_end = ">>>>>>> theirs";
-  
+
   let file_path = PathBuf::from(&resolution.file_path);
   let mut content = get_string_from_file(&file_path).unwrap();
 
@@ -85,7 +99,7 @@ fn apply_conflict_resolutions(resolution: &SocketMessage) {
     let range = start..end;
 
     content.replace_range(range, &conflict.context_before);
-    
+
     // 1.1
     // the ours version up until the original version
     let start = content.find(conflict_start).unwrap();
@@ -119,65 +133,64 @@ fn apply_conflict_resolutions(resolution: &SocketMessage) {
     content.replace_range(range, &conflict.context_after);
   }
 
-  std::fs::write(file_path, content)
-  .expect("could not write to the file");
+  std::fs::write(file_path, content).expect("could not write to the file");
 }
 
 pub async fn main(modlist_name: String) {
-    let server = Server::bind("127.0.0.1:5001").unwrap();
+  let server = Server::bind("127.0.0.1:5001").unwrap();
 
-    println!("listening");
+  println!("listening");
 
-    let modlist_name = Arc::new(modlist_name);
+  let modlist_name = Arc::new(modlist_name);
 
-    for request in server.filter_map(Result::ok) {
-      let modlist_name = modlist_name.clone();
+  for request in server.filter_map(Result::ok) {
+    let modlist_name = modlist_name.clone();
 
-      if !request.protocols().contains(&"rust-websocket".to_string()) {
-        request.reject().unwrap();
-        return;
-      }
+    if !request.protocols().contains(&"rust-websocket".to_string()) {
+      request.reject().unwrap();
+      return;
+    }
 
-      let mut client = request.use_protocol("rust-websocket").accept().unwrap();
+    let mut client = request.use_protocol("rust-websocket").accept().unwrap();
 
-      let ip = client.peer_addr().unwrap();
+    let ip = client.peer_addr().unwrap();
 
-      println!("Connection from {}", ip);
+    println!("Connection from {}", ip);
 
-      let mut reader = start_merging(&modlist_name).expect("could not get the stdout reader for the script merger");
-      let (mut receiver, mut sender) = client.split().unwrap();
+    let mut reader =
+      start_merging(&modlist_name).expect("could not get the stdout reader for the script merger");
+    let (mut receiver, mut sender) = client.split().unwrap();
 
-      thread::spawn(move || {
-        reader
+    thread::spawn(move || {
+      reader
         .lines()
         .filter_map(|line| line.ok())
         .for_each(|line| {
-          sender.send_message(&OwnedMessage::Text(line))
-          .expect("error when sending the message to the client");
-
+          sender
+            .send_message(&OwnedMessage::Text(line))
+            .expect("error when sending the message to the client");
         });
-      });
+    });
 
-      for message in receiver.incoming_messages() {
-        let message = message.unwrap();
+    for message in receiver.incoming_messages() {
+      let message = message.unwrap();
 
-        match message {
-          OwnedMessage::Close(_) => {
-            println!("Client {} disconnected", ip);
+      match message {
+        OwnedMessage::Close(_) => {
+          println!("Client {} disconnected", ip);
 
-            return;
-          }
-          OwnedMessage::Text(message) => {
-            let resolutions = serde_json::from_str::<SocketMessage>(&message)
-              .expect("error when parsing the socket message");
-
-            apply_conflict_resolutions(&resolutions);
-          },
-          _ => {},
+          return;
         }
+        OwnedMessage::Text(message) => {
+          let resolutions = serde_json::from_str::<SocketMessage>(&message)
+            .expect("error when parsing the socket message");
+
+          apply_conflict_resolutions(&resolutions);
+        }
+        _ => {}
       }
     }
-
+  }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -189,7 +202,7 @@ struct Conflict {
   // some of the code before and after the conflict
   context_before: String,
   context_after: String,
-  context_original_size: usize
+  context_original_size: usize,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -198,5 +211,5 @@ struct SocketMessage {
   file_name: String,
   file_path: String,
 
-  mod_name: String
+  mod_name: String,
 }

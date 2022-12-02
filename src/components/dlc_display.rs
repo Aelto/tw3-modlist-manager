@@ -10,7 +10,7 @@ pub fn dlc_display(name: &str, modlist_name: &str) -> Markup {
     @else {
       span.folder-display { (name) }
     }
-    
+
     a href={"/modlist/"(modlist_name)"/edit/dlcs/"(name)} { "edit" }
   }
 }

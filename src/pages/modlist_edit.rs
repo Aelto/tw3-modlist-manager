@@ -1,9 +1,9 @@
 use crate::components;
 use crate::models::modlist::ModList;
 
-use maud::html;
 use actix_web::web::HttpRequest;
-use actix_web::{HttpResponse};
+use actix_web::HttpResponse;
+use maud::html;
 
 pub async fn render(req: HttpRequest) -> HttpResponse {
   let modlist_name = req
@@ -18,10 +18,10 @@ pub async fn render(req: HttpRequest) -> HttpResponse {
       h1 { "no such modlist" }
     };
     let view = components::page(&format!("modlist - {}", modlist_name), &content);
-  
+
     return HttpResponse::Ok()
-    .content_type("text/html")
-    .body(view.into_string())
+      .content_type("text/html")
+      .body(view.into_string());
   }
 
   let modlist = some_modlist.unwrap();
@@ -70,10 +70,10 @@ pub async fn render(req: HttpRequest) -> HttpResponse {
   };
 
   let view = components::page(&format!("{} - modlist", modlist_name), &content);
-  
+
   HttpResponse::Ok()
-  .content_type("text/html")
-  .body(view.into_string())
+    .content_type("text/html")
+    .body(view.into_string())
 }
 
 fn get_stylesheet() -> String {
@@ -131,5 +131,6 @@ fn get_stylesheet() -> String {
       font-size: 150%;
     }
 
-  ".to_owned()
+  "
+  .to_owned()
 }

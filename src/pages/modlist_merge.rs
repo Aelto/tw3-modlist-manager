@@ -1,10 +1,9 @@
-
 use crate::components;
 use crate::models::modlist::ModList;
 
-use maud::html;
 use actix_web::web::HttpRequest;
-use actix_web::{HttpResponse};
+use actix_web::HttpResponse;
+use maud::html;
 
 pub async fn render(req: HttpRequest) -> HttpResponse {
   let modlist_name = req
@@ -19,24 +18,24 @@ pub async fn render(req: HttpRequest) -> HttpResponse {
       h1 { "no such modlist" }
     };
     let view = components::page(&format!("modlist - {}", modlist_name), &content);
-  
+
     return HttpResponse::Ok()
-    .content_type("text/html")
-    .body(view.into_string())
+      .content_type("text/html")
+      .body(view.into_string());
   }
 
   let mut modlist = some_modlist.unwrap();
-  
+
   if let Err(error) = modlist.read_metadata_from_disk() {
     let content = html! {
       h1 { "Could not read modlist metadata" }
       p { (error) }
     };
     let view = components::page("root", &content);
-  
+
     return HttpResponse::Ok()
-    .content_type("text/html")
-    .body(view.into_string())
+      .content_type("text/html")
+      .body(view.into_string());
   }
 
   let content = html! {
@@ -53,10 +52,10 @@ pub async fn render(req: HttpRequest) -> HttpResponse {
   };
 
   let view = components::page(&format!("{} - modlist", modlist_name), &content);
-  
+
   HttpResponse::Ok()
-  .content_type("text/html")
-  .body(view.into_string())
+    .content_type("text/html")
+    .body(view.into_string())
 }
 
 fn get_stylesheet() -> String {
@@ -251,7 +250,8 @@ fn get_stylesheet() -> String {
     .theirs {
       color: var(--var-color-accent);
     }
-  ".to_owned()
+  "
+  .to_owned()
 }
 
 fn get_merge_conflict_view() -> maud::Markup {
@@ -301,7 +301,7 @@ fn get_merge_conflict_view() -> maud::Markup {
           pre contenteditable="true" {}
         }
       }
-    
+
       button.resolve.hidden.text-style { "resolve" }
       // div.actions.row.hidden {
         // "-"
