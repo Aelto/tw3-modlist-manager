@@ -177,6 +177,8 @@ impl ModList {
       symlink_children(modlist.content_path(), self.content_path())?;
 
       symlink_children(modlist.bundles_path(), self.bundles_path())?;
+
+      symlink_children(modlist.saves_path(), self.saves_path())?;
     }
 
     Ok(())
